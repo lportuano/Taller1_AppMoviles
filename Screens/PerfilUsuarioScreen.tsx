@@ -1,10 +1,10 @@
 import { StyleSheet, Text, View, Image, ImageBackground, TouchableOpacity, ScrollView } from 'react-native'
 import React from 'react'
 
-export default function PerfilUsuarioScreen() {
+export default function PerfilUsuarioScreen({ navigation }: any) {
   return (
     <ImageBackground 
-      source={{ uri: "https://www.xtrafondos.com/thumbs/vertical/webp/1_5474.webp" }}
+      source={{ uri: "https://www.xtrafondos.com/thumbs/vertical/webp/1_13421.webp" }}
       style={styles.container}
     >
       <View style={styles.overlay}>
@@ -15,29 +15,29 @@ export default function PerfilUsuarioScreen() {
             <View style={styles.avatarWrapper}>
               <View style={styles.neonRing} />
               <Image 
-                source={{ uri: "https://api.dicebear.com/7.x/pixel-art/svg?seed=Game" }} 
+                source={{ uri: "https://www.xtrafondos.com/wallpapers/resized/el-batman-oscuro-7362.jpg?s=large" }} 
                 style={styles.avatar}
               />
               <View style={styles.levelBadge}>
                 <Text style={styles.levelText}>99</Text>
               </View>
             </View>
-            <Text style={styles.userName}>PRO_GAMER_2024</Text>
+            <Text style={styles.userName}>NoobMaster69</Text>
             <Text style={styles.userStatus}>ONLINE</Text>
           </View>
 
           {/* ESTADÍSTICAS VISUALES */}
           <View style={styles.statsContainer}>
             <View style={styles.statBox}>
-              <Text style={styles.statNumber}>150</Text>
+              <Text style={styles.statNumber}>0</Text>
               <Text style={styles.statLabel}>LOGROS</Text>
             </View>
             <View style={[styles.statBox, styles.statBoxActive]}>
-              <Text style={[styles.statNumber, {color: '#50fa7b'}]}>2.5k</Text>
+              <Text style={[styles.statNumber, {color: '#50fa7b'}]}>0</Text>
               <Text style={styles.statLabel}>PUNTOS</Text>
             </View>
             <View style={styles.statBox}>
-              <Text style={styles.statNumber}>12</Text>
+              <Text style={styles.statNumber}>0</Text>
               <Text style={styles.statLabel}>RANGO</Text>
             </View>
           </View>
@@ -70,7 +70,8 @@ export default function PerfilUsuarioScreen() {
               <View style={styles.buttonDot} />
             </TouchableOpacity>
 
-            <TouchableOpacity style={[styles.menuButton, styles.exitButton]}>
+            <TouchableOpacity style={[styles.menuButton, styles.exitButton]}
+            onPress={() => navigation.navigate("Login")}>
               <Text style={[styles.menuButtonText, {color: '#ff5555'}]}>ABANDONAR PARTIDA</Text>
             </TouchableOpacity>
           </View>
