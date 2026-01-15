@@ -34,7 +34,7 @@ function MyStack() {
 function MyTab() {
     return (
         <Tab.Navigator
-        screenOptions={{
+            screenOptions={{
                 tabBarStyle: {
                     backgroundColor: '#1e1e2e', // Color de fondo oscuro (Gaming)
                     borderTopWidth: 2,
@@ -51,12 +51,12 @@ function MyTab() {
                 },
             }}
         >
-            <Tab.Screen name="usuario" component={PerfilUsuarioScreen} 
+            <Tab.Screen name="usuario" component={PerfilUsuarioScreen}
                 options={{
-                headerShown: false,
-                tabBarIcon: () =>
-                    <Feather name="user" size={24} color="#00f2ff" />
-            }}
+                    headerShown: false,
+                    tabBarIcon: () =>
+                        <Feather name="user" size={24} color="#00f2ff" />
+                }}
             />
             <Tab.Screen name="juego" component={JuegoScreen} options={{
                 headerShown: false,
@@ -64,7 +64,13 @@ function MyTab() {
                     <Entypo name="game-controller" size={24} color="#00f2ff" />
             }}
             />
-            <Tab.Screen name="puntuacion" component={Puntuacion} options={{ headerShown: false }} />
+            <Tab.Screen name="puntuacion" component={Puntuacion}
+                options={{
+                    headerShown: false,
+                    tabBarIcon: () =>
+                        <MaterialCommunityIcons name="scoreboard" size={24} color="#00f2ff" />
+                }}
+            />
         </Tab.Navigator>
     )
 }
