@@ -3,7 +3,7 @@ import JuegoScreen from "../Screens/JuegoScreen";
 import Puntuacion from "../Screens/PuntuacionScreen";
 import { NavigationContainer } from "@react-navigation/native";
 
-//iconos
+
 import Entypo from '@expo/vector-icons/Entypo';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 
