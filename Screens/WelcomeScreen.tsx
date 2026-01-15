@@ -69,7 +69,7 @@ const styles = StyleSheet.create({
   },
   title: {
     color: "#00f2ff", // Cyan Neón
-    fontSize: 60,
+    fontSize: 50,
     fontWeight: "900",
     letterSpacing: 5,
     textShadowColor: 'rgba(0, 242, 255, 0.8)',
