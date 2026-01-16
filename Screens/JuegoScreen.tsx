@@ -76,7 +76,7 @@ export default function JuegoScreen() {
                 >
                     {/* REEMPLAZO DEL CÍRCULO POR UNA IMAGEN */}
                     <Image
-                        source={{ uri: 'https://i.postimg.cc/zf5D3bMd/Multimedia.jpg' }} // Puedes cambiar esta URL por un cristal, una moneda o un enemigo
+                        source={{ uri: 'https://i.postimg.cc/XJwVPSsg/R.png' }} // Puedes cambiar esta URL por un cristal, una moneda o un enemigo
                         style={styles.imageTarget}
                     />
                 </TouchableOpacity>
