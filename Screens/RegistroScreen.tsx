@@ -1,4 +1,4 @@
-import { ImageBackground, StyleSheet, Text, TextInput, TouchableOpacity, View, Alert } from 'react-native'
+import { ImageBackground, StyleSheet, Text, TextInput, TouchableOpacity, View, Alert, ScrollView } from 'react-native'
 import React, { useState } from 'react'
 import { supabase } from '../supabase/config'
 
@@ -6,32 +6,48 @@ export default function RegistroScreen({ navigation }: any) {
   const [usuario, setUsuario] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [nick, setNick] = useState('')
+  const [pais, setPais] = useState('')
+  const [genero, setGenero] = useState('')
 
-  //conexion a la base de datos
+  async function registro() {
+    if (!email || !password || !usuario || !nick) {
+      Alert.alert("ERROR", "Completa los campos principales para continuar.");
+      return;
+    }
 
-  async function guardarusuario() {
+    const { data, error } = await supabase.auth.signUp({
+      email: email,
+      password: password,
+    })
+
+    if (error) {
+      Alert.alert("ERROR DE AUTH", error.message);
+      return;
+    }
+
+    if (data.user) {
+      await guardarUsuario(data.user.id);
+      Alert.alert("ÉXITO", "Usuario registrado correctamente.");
+      navigation.navigate("Login");
+    }
+  }
+
+  async function guardarUsuario(uid: string) {
     const { error } = await supabase
       .from('registroUsuarios')
       .insert({
+        id: uid,
         usuario: usuario,
         email: email,
-        password: password
+        nick: nick,
+        pais: pais,
+        genero: genero
       })
-      //console.log(error);
-      
-  }
 
-
-  const handleRegistro = () => {
-    if (!email || !password || !usuario) {
-      Alert.alert("Error", "Por favor llena todos los campos");
-      return;
+    if (error) {
+      console.log("Error al insertar:", error.message);
     }
-    Alert.alert("Éxito", "Usuario registrado");
-
-    setUsuario("");
-    setEmail("");
-    setPassword("");
   }
 
   return (
@@ -40,143 +56,72 @@ export default function RegistroScreen({ navigation }: any) {
       style={styles.container}
     >
       <View style={styles.overlay}>
-        <Text style={styles.title}>REGISTRO</Text>
-        <Text style={styles.subtitle}>Crea tu cuenta de jugador</Text>
-
-        <View style={styles.inputContainer}>
-          <TextInput
-            placeholder="Nombre de usuario"
-            value={usuario}
-            onChangeText={setUsuario}
-            placeholderTextColor="rgba(255,255,255,0.7)"
-            style={styles.input}
-            autoCapitalize="characters"
-          />
-
-          <TextInput
-            placeholder="Correo electrónico"
-            value={email}
-            placeholderTextColor="rgba(255,255,255,0.7)"
-            style={styles.input}
-            onChangeText={(text) => setEmail(text)}
-            keyboardType="email-address"
-          />
-
-          <TextInput
-            placeholder="Contraseña"
-            value={password}
-            placeholderTextColor="rgba(255,255,255,0.7)"
-            style={styles.input}
-            secureTextEntry={true}
-            onChangeText={(text) => setPassword(text)}
-          />
-        </View>
-
-        <TouchableOpacity
-          style={[styles.btn, styles.btnLogin]}
-          onPress={guardarusuario}
-        >
-          <View style={styles.content}>
-            <Text style={styles.btnText}>REGISTRAR</Text>
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          <Text style={styles.title}>REGISTRO</Text>
+          
+          <View style={styles.inputContainer}>
+            <TextInput
+              placeholder="Nombre Real"
+              value={usuario}
+              onChangeText={setUsuario}
+              placeholderTextColor="rgba(255,255,255,0.5)"
+              style={styles.input}
+            />
+            <TextInput
+              placeholder="Nick / Gamertag"
+              value={nick}
+              onChangeText={setNick}
+              placeholderTextColor="rgba(255,255,255,0.5)"
+              style={[styles.input, { borderColor: '#00f2ff' }]}
+            />
+            <TextInput
+              placeholder="País"
+              value={pais}
+              onChangeText={setPais}
+              placeholderTextColor="rgba(255,255,255,0.5)"
+              style={styles.input}
+            />
+            <TextInput
+              placeholder="Género"
+              value={genero}
+              onChangeText={setGenero}
+              placeholderTextColor="rgba(255,255,255,0.5)"
+              style={styles.input}
+            />
+            <TextInput
+              placeholder="Correo Electrónico"
+              value={email}
+              onChangeText={setEmail}
+              placeholderTextColor="rgba(255,255,255,0.5)"
+              style={styles.input}
+              autoCapitalize="none"
+            />
+            <TextInput
+              placeholder="Contraseña"
+              value={password}
+              onChangeText={setPassword}
+              placeholderTextColor="rgba(255,255,255,0.5)"
+              style={styles.input}
+              secureTextEntry={true}
+            />
           </View>
-        </TouchableOpacity>
 
-        <TouchableOpacity
-          onPress={() => navigation.navigate("Login")}>
-          <Text style={styles.linkText}>¿Ya tienes cuenta? Logéate aquí</Text>
-        </TouchableOpacity>
-
-        <Text style={styles.footerText}>VERSION 1.0.2 - 2026</Text>
+          <TouchableOpacity style={styles.btn} onPress={registro}>
+            <Text style={styles.btnText}>CREAR CUENTA</Text>
+          </TouchableOpacity>
+        </ScrollView>
       </View>
     </ImageBackground>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20
-  },
-  title: {
-    color: "#00f2ff",
-    fontSize: 50,
-    fontWeight: "900",
-    letterSpacing: 5,
-    textShadowColor: 'rgba(0, 242, 255, 0.8)',
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 15,
-  },
-  subtitle: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "300",
-    letterSpacing: 2,
-    marginBottom: 40,
-    textTransform: "uppercase"
-  },
-  inputContainer: {
-    width: '100%',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  input: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    width: '90%',
-    height: 60,
-    borderRadius: 10,
-    paddingHorizontal: 20,
-    fontSize: 16,
-    color: 'white',
-    marginBottom: 15,
-    borderWidth: 1,
-    borderColor: 'rgba(0, 242, 255, 0.3)',
-  },
-  btn: {
-    height: 65,
-    width: "90%",
-    borderRadius: 10,
-    borderWidth: 2,
-    justifyContent: "center",
-    alignItems: 'center',
-    elevation: 10,
-    shadowColor: '#6200ee',
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.5,
-  },
-  btnLogin: {
-    backgroundColor: "#6200ee",
-    borderColor: "#bb86fc",
-    marginTop: 10,
-    marginBottom: 10,
-  },
-  content: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  btnText: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "white",
-    letterSpacing: 2,
-  },
-  linkText: {
-    color: '#00f2ff',
-    marginTop: 25,
-    fontSize: 14,
-    textDecorationLine: 'underline',
-    fontWeight: '600'
-  },
-  footerText: {
-    position: 'absolute',
-    bottom: 30,
-    color: 'rgba(255,255,255,0.3)',
-    fontSize: 10,
-    letterSpacing: 2
-  }
+  container: { flex: 1 },
+  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.8)' },
+  scrollContent: { alignItems: "center", padding: 30, paddingTop: 80 },
+  title: { color: "#00f2ff", fontSize: 40, fontWeight: "900", marginBottom: 40, letterSpacing: 4 },
+  inputContainer: { width: '100%' },
+  input: { backgroundColor: 'rgba(255, 255, 255, 0.05)', width: '100%', height: 55, borderRadius: 10, paddingHorizontal: 20, color: 'white', marginBottom: 15, borderWidth: 1, borderColor: 'rgba(0, 242, 255, 0.2)' },
+  btn: { backgroundColor: "#6200ee", height: 60, width: "100%", borderRadius: 10, justifyContent: "center", alignItems: 'center', marginTop: 20 },
+  btnText: { color: "white", fontSize: 18, fontWeight: "bold", letterSpacing: 2 }
 })

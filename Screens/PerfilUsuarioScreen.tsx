@@ -1,16 +1,66 @@
-import { StyleSheet, Text, View, Image, ImageBackground, TouchableOpacity, ScrollView } from 'react-native'
-import React from 'react'
+import { StyleSheet, Text, View, Image, ImageBackground, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native'
+import React, { useEffect, useState } from 'react'
+import { supabase } from '../supabase/config'
 
 export default function PerfilUsuarioScreen({ navigation }: any) {
+  const [perfil, setPerfil] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    traerDatos();
+  }, [])
+
+  async function traerDatos() {
+    try {
+      setLoading(true)
+      
+      // 1. Obtener el usuario actual de la autenticación
+      const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+      if (authError) throw authError;
+
+      if (user) {
+        // 2. Consultar tu tabla real 'registroUsuarios'
+        const { data, error: dbError } = await supabase
+          .from('registroUsuarios')
+          .select('usuario, nick, email, pais, genero')
+          .eq('id', user.id)
+          .maybeSingle() // Evita errores si la fila aún no existe
+
+        if (dbError) throw dbError;
+
+        if (data) {
+          setPerfil(data)
+        } else {
+          console.log("No se encontraron datos extra para este ID en la tabla.");
+        }
+      }
+    } catch (error: any) {
+      console.error("Error al sincronizar perfil:", error.message)
+      Alert.alert("Error de Conexión", "No se pudo obtener la información del servidor.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <View style={[styles.container, { backgroundColor: '#000', justifyContent: 'center' }]}>
+        <ActivityIndicator size="large" color="#00f2ff" />
+        <Text style={styles.loadingText}>CARGANDO DATOS DEL JUGADOR...</Text>
+      </View>
+    )
+  }
+
   return (
     <ImageBackground 
       source={{ uri: "https://www.xtrafondos.com/thumbs/vertical/webp/1_13421.webp" }}
       style={styles.container}
     >
       <View style={styles.overlay}>
-        <ScrollView contentContainerStyle={styles.scrollContent}>
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           
-          {/* SECCIÓN AVATAR */}
+          {/* CABECERA CON AVATAR DE BATMAN */}
           <View style={styles.headerContainer}>
             <View style={styles.avatarWrapper}>
               <View style={styles.neonRing} />
@@ -18,63 +68,48 @@ export default function PerfilUsuarioScreen({ navigation }: any) {
                 source={{ uri: "https://www.xtrafondos.com/wallpapers/resized/el-batman-oscuro-7362.jpg?s=large" }} 
                 style={styles.avatar}
               />
-              <View style={styles.levelBadge}>
-                <Text style={styles.levelText}>99</Text>
-              </View>
             </View>
-            <Text style={styles.userName}>NoobMaster69</Text>
-            <Text style={styles.userStatus}>ONLINE</Text>
+            <Text style={styles.userNick}>{perfil?.nick?.toUpperCase() || 'SIN GAMERTAG'}</Text>
+            <Text style={styles.userStatus}>JUGADOR ONLINE</Text>
           </View>
 
-          {/* ESTADÍSTICAS VISUALES */}
-          <View style={styles.statsContainer}>
-            <View style={styles.statBox}>
-              <Text style={styles.statNumber}>0</Text>
-              <Text style={styles.statLabel}>LOGROS</Text>
+          {/* CONTENEDORES DE INFORMACIÓN REAL */}
+          <View style={styles.infoContainer}>
+            
+            <View style={styles.dataBox}>
+              <Text style={styles.label}>NOMBRE REAL</Text>
+              <Text style={styles.value}>{perfil?.usuario || 'No registrado'}</Text>
             </View>
-            <View style={[styles.statBox, styles.statBoxActive]}>
-              <Text style={[styles.statNumber, {color: '#50fa7b'}]}>0</Text>
-              <Text style={styles.statLabel}>PUNTOS</Text>
+
+            <View style={styles.dataBox}>
+              <Text style={styles.label}>GAMERTAG / NICK</Text>
+              <Text style={styles.value}>{perfil?.nick || 'N/A'}</Text>
             </View>
-            <View style={styles.statBox}>
-              <Text style={styles.statNumber}>0</Text>
-              <Text style={styles.statLabel}>RANGO</Text>
+
+            <View style={styles.dataBox}>
+              <Text style={styles.label}>PAÍS</Text>
+              <Text style={styles.value}>{perfil?.pais || 'No definido'}</Text>
             </View>
+
+            <View style={styles.dataBox}>
+              <Text style={styles.label}>GÉNERO</Text>
+              <Text style={styles.value}>{perfil?.genero || 'No especificado'}</Text>
+            </View>
+
+            <View style={[styles.dataBox, styles.emailBox]}>
+              <Text style={[styles.label, { color: '#ff79c6' }]}>CORREO ELECTRÓNICO</Text>
+              <Text style={styles.value}>{perfil?.email || 'Desconocido'}</Text>
+            </View>
+
           </View>
 
-          {/* BARRA DE PROGRESO DE DISEÑO */}
-          <View style={styles.progressSection}>
-            <View style={styles.labelRow}>
-              <Text style={styles.progressTitle}>ENERGÍA DEL SISTEMA</Text>
-              <Text style={styles.progressValue}>85%</Text>
-            </View>
-            <View style={styles.progressBarEmpty}>
-              <View style={styles.progressBarFill} />
-            </View>
-          </View>
-
-          {/* BOTONES DE MENÚ ESTILIZADOS */}
-          <View style={styles.menuWrapper}>
-            <TouchableOpacity style={styles.menuButton}>
-              <Text style={styles.menuButtonText}>INVENTARIO</Text>
-              <View style={styles.buttonDot} />
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.menuButton}>
-              <Text style={styles.menuButtonText}>HABILIDADES</Text>
-              <View style={styles.buttonDot} />
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.menuButton}>
-              <Text style={styles.menuButtonText}>LOGROS DE MISIÓN</Text>
-              <View style={styles.buttonDot} />
-            </TouchableOpacity>
-
-            <TouchableOpacity style={[styles.menuButton, styles.exitButton]}
-            onPress={() => navigation.navigate("Login")}>
-              <Text style={[styles.menuButtonText, {color: '#ff5555'}]}>ABANDONAR PARTIDA</Text>
-            </TouchableOpacity>
-          </View>
+          {/* BOTÓN SALIR */}
+          <TouchableOpacity 
+            style={styles.logoutButton}
+            onPress={() => navigation.navigate("Login")}
+          >
+            <Text style={styles.logoutText}>SALIR AL MENÚ PRINCIPAL</Text>
+          </TouchableOpacity>
 
         </ScrollView>
       </View>
@@ -83,157 +118,53 @@ export default function PerfilUsuarioScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-  },
-  scrollContent: {
-    padding: 25,
-    paddingTop: 50,
-  },
-  headerContainer: {
-    alignItems: 'center',
-    marginBottom: 40,
-  },
-  avatarWrapper: {
-    width: 130,
-    height: 130,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  neonRing: {
-    position: 'absolute',
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    borderWidth: 2,
+  container: { flex: 1 },
+  overlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.88)' },
+  scrollContent: { padding: 25, paddingTop: 60, paddingBottom: 50, alignItems: 'center' },
+  loadingText: { color: '#00f2ff', marginTop: 15, letterSpacing: 2, fontSize: 12 },
+  
+  headerContainer: { alignItems: 'center', marginBottom: 40 },
+  avatarWrapper: { width: 150, height: 150, justifyContent: 'center', alignItems: 'center' },
+  neonRing: { 
+    position: 'absolute', 
+    width: 160, 
+    height: 160, 
+    borderRadius: 80, 
+    borderWidth: 2, 
     borderColor: '#00f2ff',
-    borderStyle: 'dashed',
+    borderStyle: 'dotted',
+    shadowColor: '#00f2ff',
+    shadowRadius: 10,
+    shadowOpacity: 0.8
   },
-  avatar: {
-    width: 110,
-    height: 110,
-    borderRadius: 55,
-    backgroundColor: '#1a1a2e',
+  avatar: { width: 140, height: 140, borderRadius: 70 },
+  
+  userNick: { color: '#fff', fontSize: 30, fontWeight: '900', letterSpacing: 2, marginTop: 20, textShadowColor: '#00f2ff', textShadowRadius: 10 },
+  userStatus: { color: '#50fa7b', fontSize: 12, fontWeight: 'bold', letterSpacing: 4, marginTop: 5 },
+
+  infoContainer: { width: '100%', marginTop: 10 },
+  dataBox: { 
+    backgroundColor: 'rgba(255,255,255,0.04)', 
+    padding: 15, 
+    borderRadius: 10, 
+    marginBottom: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: '#00f2ff'
   },
-  levelBadge: {
-    position: 'absolute',
-    bottom: 5,
-    right: 5,
-    backgroundColor: '#6200ee',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 5,
-    borderWidth: 1,
-    borderColor: '#00f2ff',
-  },
-  levelText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  userName: {
-    color: '#fff',
-    fontSize: 26,
-    fontWeight: '900',
-    letterSpacing: 2,
-  },
-  userStatus: {
-    color: '#50fa7b',
-    fontSize: 12,
-    fontWeight: 'bold',
-    letterSpacing: 4,
-    marginTop: 5,
-  },
-  statsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 40,
-  },
-  statBox: {
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    padding: 15,
-    borderRadius: 10,
+  emailBox: { borderLeftColor: '#ff79c6', backgroundColor: 'rgba(255, 121, 198, 0.05)' },
+  label: { color: '#00f2ff', fontSize: 10, fontWeight: 'bold', letterSpacing: 1.5, marginBottom: 4 },
+  value: { color: '#fff', fontSize: 16, fontWeight: '500' },
+
+  logoutButton: { 
+    marginTop: 30, 
+    width: '100%', 
+    height: 55, 
+    borderRadius: 10, 
+    borderWidth: 1, 
+    borderColor: '#ff5555', 
+    justifyContent: 'center', 
     alignItems: 'center',
-    width: '30%',
-    borderBottomWidth: 2,
-    borderBottomColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: 'rgba(255, 85, 85, 0.1)'
   },
-  statBoxActive: {
-    borderColor: '#00f2ff',
-    borderBottomColor: '#00f2ff',
-    backgroundColor: 'rgba(0,242,255,0.05)',
-  },
-  statNumber: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  statLabel: {
-    color: 'rgba(255,255,255,0.4)',
-    fontSize: 10,
-    marginTop: 5,
-  },
-  progressSection: {
-    marginBottom: 40,
-  },
-  labelRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 10,
-  },
-  progressTitle: {
-    color: '#ff79c6',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  progressValue: {
-    color: '#fff',
-    fontSize: 12,
-  },
-  progressBarEmpty: {
-    height: 8,
-    backgroundColor: '#333',
-    borderRadius: 4,
-  },
-  progressBarFill: {
-    width: '85%',
-    height: '100%',
-    backgroundColor: '#ff79c6',
-    borderRadius: 4,
-  },
-  menuWrapper: {
-    gap: 15,
-  },
-  menuButton: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    padding: 20,
-    borderRadius: 5,
-    borderLeftWidth: 5,
-    borderLeftColor: '#00f2ff',
-  },
-  menuButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    letterSpacing: 2,
-    fontSize: 14,
-  },
-  buttonDot: {
-    width: 8,
-    height: 8,
-    backgroundColor: '#00f2ff',
-    borderRadius: 4,
-  },
-  exitButton: {
-    borderLeftColor: '#ff5555',
-    marginTop: 20,
-    backgroundColor: 'rgba(255, 85, 85, 0.05)',
-  }
+  logoutText: { color: '#ff5555', fontWeight: 'bold', letterSpacing: 1.5, fontSize: 13 }
 })
