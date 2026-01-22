@@ -7,31 +7,41 @@ export default function RegistroScreen({ navigation }: any) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
 
+  async function registro() {
+    const { data, error } = await supabase.auth.signUp({
+      email: email,
+      password: password,
+    })
+
+    console.log(data);
+    console.log(error);
+
+    if (data.user != null) {
+      const id = data.user.id;
+      guardarUsuario(id)
+      navigation.navigate("Login")
+
+    } else {
+      Alert.alert("ERROR", "Los campos son obligatorios")
+    }
+  }
+
   //conexion a la base de datos
 
-  async function guardarusuario() {
+  async function guardarUsuario(uid: String) {
     const { error } = await supabase
       .from('registroUsuarios')
       .insert({
+        id: uid,
         usuario: usuario,
         email: email,
-        password: password
       })
-      //console.log(error);
-      
-  }
-
-
-  const handleRegistro = () => {
-    if (!email || !password || !usuario) {
-      Alert.alert("Error", "Por favor llena todos los campos");
-      return;
+    if (error) {
+      console.error("DETALLE DEL ERROR:", error.message);
+      Alert.alert("Error DB", error.message);
+    } else {
+      console.log("Insertado con éxito");
     }
-    Alert.alert("Éxito", "Usuario registrado");
-
-    setUsuario("");
-    setEmail("");
-    setPassword("");
   }
 
   return (
@@ -74,7 +84,7 @@ export default function RegistroScreen({ navigation }: any) {
 
         <TouchableOpacity
           style={[styles.btn, styles.btnLogin]}
-          onPress={guardarusuario}
+          onPress={() => registro()}
         >
           <View style={styles.content}>
             <Text style={styles.btnText}>REGISTRAR</Text>
