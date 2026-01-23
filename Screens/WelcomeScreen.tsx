@@ -52,24 +52,24 @@ export default function WelcomeScreen({ navigation }: any) {
 
         <View style={styles.buttonContainer}>
           {/* BOTÓN LOGIN (ESTILO CYBER) */}
-          <TouchableOpacity 
-            onPress={() => navigation.navigate("Login")} 
+          <TouchableOpacity
+            onPress={() => navigation.navigate("Login")}
             style={[styles.btn, { borderColor: '#a020f0' }]}
           >
             <View style={[styles.btnInner, { backgroundColor: 'rgba(160, 32, 240, 0.2)' }]}>
-               <Image style={styles.img} source={require("../assets/images/play.png")} />
-               <Text style={styles.btnText}>START MISSION</Text>
+              <Image style={styles.img} source={require("../assets/images/play.png")} />
+              <Text style={styles.btnText}>START MISSION</Text>
             </View>
           </TouchableOpacity>
 
           {/* BOTÓN REGISTRO (ESTILO CYBER) */}
-          <TouchableOpacity 
-            onPress={() => navigation.navigate("Registro")} 
+          <TouchableOpacity
+            onPress={() => navigation.navigate("Registro")}
             style={[styles.btn, { borderColor: '#00f2ff' }]}
           >
             <View style={[styles.btnInner, { backgroundColor: 'rgba(0, 242, 255, 0.1)' }]}>
-               <Image style={styles.img} source={require("../assets/images/xbox.png")} />
-               <Text style={styles.btnText}>NEW PLAYER</Text>
+              <Image style={styles.img} source={require("../assets/images/xbox.png")} />
+              <Text style={styles.btnText}>NEW PLAYER</Text>
             </View>
           </TouchableOpacity>
         </View>
@@ -84,42 +84,42 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#000' },
   backgroundStep: { width: width, height: height },
   darkFilter: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.5)' },
-  overlay: { 
-    ...StyleSheet.absoluteFillObject, 
-    justifyContent: "space-between", 
-    alignItems: "center", 
-    paddingVertical: 100 
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 100
   },
   topContent: { alignItems: 'center' },
-  title: { 
-    color: "#fff", 
-    fontSize: 55, 
-    fontWeight: "900", 
+  title: {
+    color: "#fff",
+    fontSize: 55,
+    fontWeight: "900",
     letterSpacing: 6,
     textShadowColor: '#00f2ff',
     textShadowRadius: 15
   },
-  subtitle: { 
-    color: "#00f2ff", 
-    fontSize: 14, 
-    fontWeight: "bold", 
+  subtitle: {
+    color: "#00f2ff",
+    fontSize: 14,
+    fontWeight: "bold",
     letterSpacing: 4,
     marginTop: 5
   },
   buttonContainer: { width: '100%', alignItems: 'center', gap: 20 },
-  btn: { 
-    width: "85%", 
-    height: 65, 
+  btn: {
+    width: "85%",
+    height: 65,
     borderRadius: 5, // Bordes más cuadrados para estilo militar/cyber
     borderWidth: 2,
     overflow: 'hidden'
   },
-  btnInner: { 
-    flex: 1, 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    justifyContent: 'center', 
-    gap: 15 
+  btnInner: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 15
   },
   btnText: { fontSize: 18, fontWeight: "900", color: "white", letterSpacing: 2 },
   img: { height: 26, width: 26, tintColor: 'white' },
