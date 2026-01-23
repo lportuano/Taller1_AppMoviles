@@ -25,7 +25,7 @@ export default function LoginScreen({ navigation }: any) {
         })
 
         if (data.session != null) {
-            navigation.navigate("Perfil")
+            navigation.navigate("Tab")
 
             //2.- Guardar el acces Token en login
             loginExitoso(data.session?.access_token)

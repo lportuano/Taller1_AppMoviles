@@ -55,11 +55,11 @@ export default function PerfilUsuarioScreen({ navigation }: any) {
   }
 
   async function cerrarSesion() {
-        const { error } = await supabase.auth.signOut()
-        await SecureStore.deleteItemAsync("token")
+    const { error } = await supabase.auth.signOut()
+    await SecureStore.deleteItemAsync("token")
 
-        navigation.navigate("Welcome");
-    }
+    navigation.navigate("Welcome");
+  }
 
   return (
     <ImageBackground
