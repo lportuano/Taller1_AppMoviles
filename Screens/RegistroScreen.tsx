@@ -35,7 +35,7 @@ export default function RegistroScreen({ navigation }: any) {
 
   async function guardarUsuario(uid: string) {
     const { error } = await supabase
-      .from('registroUsuarios')
+      .from('registroUsuario')
       .insert({
         id: uid,
         usuario: usuario,
@@ -58,14 +58,14 @@ export default function RegistroScreen({ navigation }: any) {
       <View style={styles.overlay}>
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <Text style={styles.title}>REGISTRO</Text>
-          
+
           <View style={styles.inputContainer}>
             <TextInput
               placeholder="Nombre Real"
               value={usuario}
               onChangeText={setUsuario}
               placeholderTextColor="rgba(255,255,255,0.5)"
-              style={styles.input}
+              style={[styles.input, { borderColor: '#00f2ff' }]}
             />
             <TextInput
               placeholder="Nick / Gamertag"
@@ -79,21 +79,21 @@ export default function RegistroScreen({ navigation }: any) {
               value={pais}
               onChangeText={setPais}
               placeholderTextColor="rgba(255,255,255,0.5)"
-              style={styles.input}
+              style={[styles.input, { borderColor: '#00f2ff' }]}
             />
             <TextInput
               placeholder="Género"
               value={genero}
               onChangeText={setGenero}
               placeholderTextColor="rgba(255,255,255,0.5)"
-              style={styles.input}
+              style={[styles.input, { borderColor: '#00f2ff' }]}
             />
             <TextInput
               placeholder="Correo Electrónico"
               value={email}
               onChangeText={setEmail}
               placeholderTextColor="rgba(255,255,255,0.5)"
-              style={styles.input}
+              style={[styles.input, { borderColor: '#00f2ff' }]}
               autoCapitalize="none"
             />
             <TextInput
@@ -101,7 +101,7 @@ export default function RegistroScreen({ navigation }: any) {
               value={password}
               onChangeText={setPassword}
               placeholderTextColor="rgba(255,255,255,0.5)"
-              style={styles.input}
+              style={[styles.input, { borderColor: '#00f2ff' }]}
               secureTextEntry={true}
             />
           </View>
@@ -109,6 +109,7 @@ export default function RegistroScreen({ navigation }: any) {
           <TouchableOpacity style={styles.btn} onPress={registro}>
             <Text style={styles.btnText}>CREAR CUENTA</Text>
           </TouchableOpacity>
+
         </ScrollView>
       </View>
     </ImageBackground>
