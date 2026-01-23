@@ -1,137 +1,127 @@
-import { Image, StyleSheet, Text, TouchableOpacity, View, ImageBackground } from 'react-native'
-import React from 'react'
+import { Image, StyleSheet, Text, TouchableOpacity, View, FlatList, Dimensions } from 'react-native'
+import React, { useEffect, useRef, useState } from 'react'
+
+const { width, height } = Dimensions.get('window');
+
+const carouselImages = [
+  { id: '1', uri: 'https://www.xtrafondos.com/thumbs/vertical/webp/1_11201.webp' },
+  { id: '2', uri: 'https://www.xtrafondos.com/thumbs/vertical/webp/1_3068.webp' },
+  { id: '3', uri: 'https://www.xtrafondos.com/thumbs/vertical/webp/1_13162.webp' },
+  { id: '4', uri: 'https://www.xtrafondos.com/thumbs/vertical/webp/1_3228.webp' },
+  { id: '5', uri: 'https://www.xtrafondos.com/thumbs/vertical/webp/1_12036.webp' },
+];
 
 export default function WelcomeScreen({ navigation }: any) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const flatListRef = useRef<FlatList>(null);
 
-  function Login() {
-    navigation.navigate("Login")
-  }
-
-  function Registro() {
-    navigation.navigate("Registro");
-  }
+  useEffect(() => {
+    const interval = setInterval(() => {
+      let nextIndex = (activeIndex + 1) % carouselImages.length;
+      flatListRef.current?.scrollToIndex({ index: nextIndex, animated: true });
+      setActiveIndex(nextIndex);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [activeIndex]);
 
   return (
-    <ImageBackground
-      source={{ uri: "https://www.xtrafondos.com/thumbs/vertical/webp/1_13421.webp" }}
-      style={styles.container}
-    >
-      {/* Overlay oscuro para que el texto resalte más */}
-      <View style={styles.overlay}>
+    <View style={styles.container}>
+      {/* FONDO CARRUSEL */}
+      <View style={StyleSheet.absoluteFill}>
+        <FlatList
+          ref={flatListRef}
+          data={carouselImages}
+          horizontal
+          pagingEnabled
+          scrollEnabled={false}
+          showsHorizontalScrollIndicator={false}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <Image source={{ uri: item.uri }} style={styles.backgroundStep} blurRadius={3} />
+          )}
+        />
+        {/* Capa oscura para mejorar contraste */}
+        <View style={styles.darkFilter} />
+      </View>
 
-        <Text style={styles.title}>WELCOME</Text>
-        <Text style={styles.subtitle}>Ready to Play?</Text>
+      <View style={styles.overlay}>
+        <View style={styles.topContent}>
+          <Text style={styles.title}>WELCOME</Text>
+          <Text style={styles.subtitle}>— READY TO PLAY? —</Text>
+        </View>
 
         <View style={styles.buttonContainer}>
-          {/* Botón para Login */}
-          <TouchableOpacity
-            onPress={() => Login()}
-            style={[styles.btn, styles.btnLogin]}
+          {/* BOTÓN LOGIN (ESTILO CYBER) */}
+          <TouchableOpacity 
+            onPress={() => navigation.navigate("Login")} 
+            style={[styles.btn, { borderColor: '#a020f0' }]}
           >
-            <View style={styles.content} >
-              <Text style={styles.btnText} >LOGIN</Text>
-              <Image
-                style={styles.img}
-                source={require("../assets/images/play.png")} />
+            <View style={[styles.btnInner, { backgroundColor: 'rgba(160, 32, 240, 0.2)' }]}>
+               <Image style={styles.img} source={require("../assets/images/play.png")} />
+               <Text style={styles.btnText}>START MISSION</Text>
             </View>
           </TouchableOpacity>
 
-          {/* Botón para Registro */}
-          <TouchableOpacity
-            onPress={() => Registro()}
-            style={[styles.btn, styles.btnRegistro]}
+          {/* BOTÓN REGISTRO (ESTILO CYBER) */}
+          <TouchableOpacity 
+            onPress={() => navigation.navigate("Registro")} 
+            style={[styles.btn, { borderColor: '#00f2ff' }]}
           >
-            <View style={styles.content} >
-              <Text style={styles.btnText} >REGISTRO</Text>
-              <Image
-                style={styles.img}
-                source={require("../assets/images/xbox.png")} />
+            <View style={[styles.btnInner, { backgroundColor: 'rgba(0, 242, 255, 0.1)' }]}>
+               <Image style={styles.img} source={require("../assets/images/xbox.png")} />
+               <Text style={styles.btnText}>NEW PLAYER</Text>
             </View>
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.footerText}>v 1.0.4 - 2024</Text>
+        <Text style={styles.footerText}>v 1.0.4 • 2026</Text>
       </View>
-    </ImageBackground>
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  container: { flex: 1, backgroundColor: '#000' },
+  backgroundStep: { width: width, height: height },
+  darkFilter: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.5)' },
+  overlay: { 
+    ...StyleSheet.absoluteFillObject, 
+    justifyContent: "space-between", 
+    alignItems: "center", 
+    paddingVertical: 100 
   },
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)', // Oscurece un poco el fondo para leer mejor
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20
+  topContent: { alignItems: 'center' },
+  title: { 
+    color: "#fff", 
+    fontSize: 55, 
+    fontWeight: "900", 
+    letterSpacing: 6,
+    textShadowColor: '#00f2ff',
+    textShadowRadius: 15
   },
-  title: {
-    color: "#00f2ff", // Cyan Neón
-    fontSize: 50,
-    fontWeight: "900",
-    letterSpacing: 5,
-    textShadowColor: 'rgba(0, 242, 255, 0.8)',
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 15,
-    marginBottom: 5,
+  subtitle: { 
+    color: "#00f2ff", 
+    fontSize: 14, 
+    fontWeight: "bold", 
+    letterSpacing: 4,
+    marginTop: 5
   },
-  subtitle: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "300",
-    letterSpacing: 2,
-    marginBottom: 60,
-    textTransform: "uppercase"
-  },
-  buttonContainer: {
-    width: '100%',
-    alignItems: 'center',
-    gap: 20
-  },
-  btn: {
-    height: 75,
-    width: "85%",
-    borderRadius: 15, // Bordes menos redondeados para look tecnológico
+  buttonContainer: { width: '100%', alignItems: 'center', gap: 20 },
+  btn: { 
+    width: "85%", 
+    height: 65, 
+    borderRadius: 5, // Bordes más cuadrados para estilo militar/cyber
     borderWidth: 2,
-    justifyContent: "center",
-    paddingHorizontal: 25,
-    // Sombra para los botones
-    elevation: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.5,
+    overflow: 'hidden'
   },
-  btnLogin: {
-    backgroundColor: "#6200ee", // Púrpura intenso
-    borderColor: "#bb86fc",
+  btnInner: { 
+    flex: 1, 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    gap: 15 
   },
-  btnRegistro: {
-    backgroundColor: "#1db954", // Verde tipo Xbox/Spotify
-    borderColor: "#b3ffb3",
-  },
-  content: {
-    flexDirection: "row-reverse",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  btnText: {
-    fontSize: 22,
-    fontWeight: "bold",
-    color: "white",
-    letterSpacing: 1,
-  },
-  img: {
-    height: 40,
-    width: 40,
-    tintColor: 'white', // Esto hace que los iconos se vean blancos y uniformes
-  },
-  footerText: {
-    position: 'absolute',
-    bottom: 30,
-    color: 'rgba(255,255,255,0.5)',
-    fontSize: 12,
-    letterSpacing: 2
-  }
+  btnText: { fontSize: 18, fontWeight: "900", color: "white", letterSpacing: 2 },
+  img: { height: 26, width: 26, tintColor: 'white' },
+  footerText: { color: 'rgba(255,255,255,0.4)', fontSize: 10, letterSpacing: 3, fontWeight: 'bold' }
 })

@@ -1,11 +1,76 @@
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, ImageBackground, Vibration } from 'react-native'
-import React, { useState } from 'react'
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, ImageBackground, Vibration, Alert } from 'react-native'
+import React, { useEffect, useState } from 'react'
 import { NavigationContainer } from '@react-navigation/native';
+
+//Biometria
+import * as LocalAuthentication from 'expo-local-authentication';
+import * as SecureStore from 'expo-secure-store';
+
+import { supabase } from '../supabase/config';
 
 export default function LoginScreen({ navigation }: any) {
 
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
+
+    useEffect(() => {
+        revisaBiometria()
+    }, [])
+
+
+    async function login() {
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email: email,
+            password: password,
+        })
+
+        if (data.session != null) {
+            navigation.navigate("Perfil")
+
+            //2.- Guardar el acces Token en login
+            loginExitoso(data.session?.access_token)
+
+        } else {
+            Alert.alert("ERROR")
+        }
+
+    }
+
+    //Login por biometria
+    async function biometria() {
+        const authResultado = await LocalAuthentication.authenticateAsync({
+            promptMessage: "Inicia con biometria"
+        })
+        if (authResultado.success) {
+            console.log("Login exitoso");
+            navigation.navigate("Tab")
+        }
+    }
+
+    //1.- verificar si la sesion esta activa
+    async function loginExitoso(accesToken: any) {
+        await SecureStore.setItemAsync("token", accesToken)
+        navigation.navigate("Tab")
+    }
+
+    //3.- verificar si el token es valido
+    async function revisaBiometria() {
+        const token = await SecureStore.getItemAsync("token")
+
+        if (!token) {
+            return false
+        }
+
+        biometria()
+
+    }
+
+    //recuperar usuario
+    async function recuperarUsuario() {
+        const { error } = await supabase.auth.resetPasswordForEmail(email);
+
+        Alert.alert("Solicitud enviada", error?.message || "Revisa tu correo");
+    }
 
     return (
         <ImageBackground
@@ -38,7 +103,7 @@ export default function LoginScreen({ navigation }: any) {
 
                 <TouchableOpacity
                     style={styles.btnLogin}
-                    onPress={()=>navigation.navigate("Tab")}
+                    onPress={() => login()}
                 >
                     <Text style={styles.textBtn}>START MISSION</Text>
                 </TouchableOpacity>

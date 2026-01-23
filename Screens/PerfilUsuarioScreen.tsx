@@ -2,6 +2,8 @@ import { StyleSheet, Text, View, Image, ImageBackground, TouchableOpacity, Scrol
 import React, { useEffect, useState } from 'react'
 import { supabase } from '../supabase/config'
 
+import * as SecureStore from 'expo-secure-store';
+
 export default function PerfilUsuarioScreen({ navigation }: any) {
   const [perfil, setPerfil] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -13,7 +15,7 @@ export default function PerfilUsuarioScreen({ navigation }: any) {
   async function traerDatos() {
     try {
       setLoading(true)
-      
+
       // 1. Obtener el usuario actual de la autenticación
       const { data: { user }, error: authError } = await supabase.auth.getUser()
 
@@ -22,7 +24,7 @@ export default function PerfilUsuarioScreen({ navigation }: any) {
       if (user) {
         // 2. Consultar tu tabla real 'registroUsuarios'
         const { data, error: dbError } = await supabase
-          .from('registroUsuarios')
+          .from('registroUsuario')
           .select('usuario, nick, email, pais, genero')
           .eq('id', user.id)
           .maybeSingle() // Evita errores si la fila aún no existe
@@ -52,20 +54,27 @@ export default function PerfilUsuarioScreen({ navigation }: any) {
     )
   }
 
+  async function cerrarSesion() {
+        const { error } = await supabase.auth.signOut()
+        await SecureStore.deleteItemAsync("token")
+
+        navigation.navigate("Welcome");
+    }
+
   return (
-    <ImageBackground 
+    <ImageBackground
       source={{ uri: "https://www.xtrafondos.com/thumbs/vertical/webp/1_13421.webp" }}
       style={styles.container}
     >
       <View style={styles.overlay}>
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          
+
           {/* CABECERA CON AVATAR DE BATMAN */}
           <View style={styles.headerContainer}>
             <View style={styles.avatarWrapper}>
               <View style={styles.neonRing} />
-              <Image 
-                source={{ uri: "https://www.xtrafondos.com/wallpapers/resized/el-batman-oscuro-7362.jpg?s=large" }} 
+              <Image
+                source={{ uri: "https://www.xtrafondos.com/wallpapers/resized/el-batman-oscuro-7362.jpg?s=large" }}
                 style={styles.avatar}
               />
             </View>
@@ -75,7 +84,7 @@ export default function PerfilUsuarioScreen({ navigation }: any) {
 
           {/* CONTENEDORES DE INFORMACIÓN REAL */}
           <View style={styles.infoContainer}>
-            
+
             <View style={styles.dataBox}>
               <Text style={styles.label}>NOMBRE REAL</Text>
               <Text style={styles.value}>{perfil?.usuario || 'No registrado'}</Text>
@@ -104,11 +113,11 @@ export default function PerfilUsuarioScreen({ navigation }: any) {
           </View>
 
           {/* BOTÓN SALIR */}
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.logoutButton}
-            onPress={() => navigation.navigate("Login")}
+            onPress={() => cerrarSesion()}
           >
-            <Text style={styles.logoutText}>SALIR AL MENÚ PRINCIPAL</Text>
+            <Text style={styles.logoutText}>Cerrar Sesion</Text>
           </TouchableOpacity>
 
         </ScrollView>
@@ -122,15 +131,15 @@ const styles = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.88)' },
   scrollContent: { padding: 25, paddingTop: 60, paddingBottom: 50, alignItems: 'center' },
   loadingText: { color: '#00f2ff', marginTop: 15, letterSpacing: 2, fontSize: 12 },
-  
+
   headerContainer: { alignItems: 'center', marginBottom: 40 },
   avatarWrapper: { width: 150, height: 150, justifyContent: 'center', alignItems: 'center' },
-  neonRing: { 
-    position: 'absolute', 
-    width: 160, 
-    height: 160, 
-    borderRadius: 80, 
-    borderWidth: 2, 
+  neonRing: {
+    position: 'absolute',
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    borderWidth: 2,
     borderColor: '#00f2ff',
     borderStyle: 'dotted',
     shadowColor: '#00f2ff',
@@ -138,15 +147,15 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.8
   },
   avatar: { width: 140, height: 140, borderRadius: 70 },
-  
+
   userNick: { color: '#fff', fontSize: 30, fontWeight: '900', letterSpacing: 2, marginTop: 20, textShadowColor: '#00f2ff', textShadowRadius: 10 },
   userStatus: { color: '#50fa7b', fontSize: 12, fontWeight: 'bold', letterSpacing: 4, marginTop: 5 },
 
   infoContainer: { width: '100%', marginTop: 10 },
-  dataBox: { 
-    backgroundColor: 'rgba(255,255,255,0.04)', 
-    padding: 15, 
-    borderRadius: 10, 
+  dataBox: {
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    padding: 15,
+    borderRadius: 10,
     marginBottom: 12,
     borderLeftWidth: 4,
     borderLeftColor: '#00f2ff'
@@ -155,14 +164,14 @@ const styles = StyleSheet.create({
   label: { color: '#00f2ff', fontSize: 10, fontWeight: 'bold', letterSpacing: 1.5, marginBottom: 4 },
   value: { color: '#fff', fontSize: 16, fontWeight: '500' },
 
-  logoutButton: { 
-    marginTop: 30, 
-    width: '100%', 
-    height: 55, 
-    borderRadius: 10, 
-    borderWidth: 1, 
-    borderColor: '#ff5555', 
-    justifyContent: 'center', 
+  logoutButton: {
+    marginTop: 30,
+    width: '100%',
+    height: 55,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#ff5555',
+    justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(255, 85, 85, 0.1)'
   },
