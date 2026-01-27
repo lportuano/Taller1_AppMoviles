@@ -1,48 +1,138 @@
 import { StyleSheet, Text, View, Image, ImageBackground, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import { supabase } from '../supabase/config'
+import * as SecureStore from 'expo-secure-store'
+import * as ImagePicker from 'expo-image-picker'
+import { Ionicons } from '@expo/vector-icons'
 
-import * as SecureStore from 'expo-secure-store';
+import Card from '../components/Card'
 
 export default function PerfilUsuarioScreen({ navigation }: any) {
   const [perfil, setPerfil] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [image, setImage] = useState<string | null>(null)
+  const [modalVisible, setModalVisible] = useState(false)
 
   useEffect(() => {
     traerDatos();
   }, [])
 
+  //logica para traer los datos
   async function traerDatos() {
-    try {
-      setLoading(true)
+  try {
+    setLoading(true)
+    const { data: { user } } = await supabase.auth.getUser()
 
-      // 1. Obtener el usuario actual de la autenticación
-      const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (user) {
+      const { data, error } = await supabase
+        .from('registroUsuario')
+        .select('usuario, nick, email, pais, genero, avatar')
+        .eq('id', user.id)
+        .maybeSingle()
 
-      if (authError) throw authError;
-
-      if (user) {
-        // 2. Consultar tu tabla real 'registroUsuarios'
-        const { data, error: dbError } = await supabase
-          .from('registroUsuario')
-          .select('usuario, nick, email, pais, genero')
-          .eq('id', user.id)
-          .maybeSingle() // Evita errores si la fila aún no existe
-
-        if (dbError) throw dbError;
-
-        if (data) {
-          setPerfil(data)
-        } else {
-          console.log("No se encontraron datos extra para este ID en la tabla.");
+      if (data) {
+        setPerfil(data)
+        
+        if (data.avatar) {
+          console.log("Imagen cargada de la DB:", data.avatar);
+          setImage(data.avatar); 
         }
       }
-    } catch (error: any) {
-      console.error("Error al sincronizar perfil:", error.message)
-      Alert.alert("Error de Conexión", "No se pudo obtener la información del servidor.")
-    } finally {
-      setLoading(false)
     }
+  } catch (error) {
+    console.error(error);
+  } finally {
+    setLoading(false)
+  }
+}
+
+  // logica de subir imagen
+  async function subirImagen(uriSeleccionada: string) {
+    const { data: { user } } = await supabase.auth.getUser();
+    const userId = user?.id;
+
+    const { data, error } = await supabase
+      .storage
+      .from('jugadores')
+      .upload('usuarios/' + userId + '.png', {
+        uri: uriSeleccionada,
+        name: "avatar.png",
+        type: "image/png"
+      } as any,
+        {
+          contentType: "image/png",
+          upsert: true
+        }
+      )
+
+    if (error) {
+      console.log("Error Storage:", error.message);
+      return;
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('jugadores')
+      .getPublicUrl('usuarios/' + userId + '.png');
+
+    const { error: errorUpdate } = await supabase
+      .from('registroUsuario')
+      .update({ avatar: publicUrl })
+      .eq('id', userId);
+
+    if (errorUpdate) {
+      console.log("Error Tabla:", errorUpdate.message);
+      Alert.alert("Error", "No se pudo guardar la URL en la tabla");
+    } else {
+      setImage(publicUrl + '?t=' + new Date().getTime());
+    }
+  }
+
+  //logica para abrir la galeria
+  const pickImage = async () => {
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permissionResult.granted) {
+      Alert.alert('Permiso necesario', 'Se requiere acceso a la galería.');
+      return;
+    }
+
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.5,
+    });
+
+    if (!result.canceled) {
+      setModalVisible(false);
+      subirImagen(result.assets[0].uri);
+    }
+  };
+
+  //logica para abir la camara
+  const takePhoto = async () => {
+    const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permissionResult.granted) {
+      Alert.alert('Permiso necesario', 'Se requiere acceso a la cámara.');
+      return;
+    }
+
+    let result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.5,
+    });
+
+    if (!result.canceled) {
+      setModalVisible(false);
+      subirImagen(result.assets[0].uri);
+    }
+  };
+
+  async function cerrarSesion() {
+    await supabase.auth.signOut()
+    await SecureStore.deleteItemAsync("token")
+    navigation.navigate("Welcome");
   }
 
   if (loading) {
@@ -54,13 +144,6 @@ export default function PerfilUsuarioScreen({ navigation }: any) {
     )
   }
 
-  async function cerrarSesion() {
-    const { error } = await supabase.auth.signOut()
-    await SecureStore.deleteItemAsync("token")
-
-    navigation.navigate("Welcome");
-  }
-
   return (
     <ImageBackground
       source={{ uri: "https://www.xtrafondos.com/thumbs/vertical/webp/1_13421.webp" }}
@@ -69,22 +152,27 @@ export default function PerfilUsuarioScreen({ navigation }: any) {
       <View style={styles.overlay}>
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
 
-          {/* CABECERA CON AVATAR DE BATMAN */}
           <View style={styles.headerContainer}>
-            <View style={styles.avatarWrapper}>
+            <TouchableOpacity
+              style={styles.avatarWrapper}
+              onPress={() => setModalVisible(true)}
+              activeOpacity={0.8}
+            >
               <View style={styles.neonRing} />
               <Image
-                source={{ uri: "https://www.xtrafondos.com/wallpapers/resized/el-batman-oscuro-7362.jpg?s=large" }}
+                source={{ uri: image || "https://wallpapers.com/images/hd/netflix-profile-pictures-1000-x-1000-qo9h82134t9nv0j0.jpg" }}
                 style={styles.avatar}
               />
-            </View>
+              <View style={styles.cameraBadge}>
+                <Ionicons name="camera" size={16} color="#000" />
+              </View>
+            </TouchableOpacity>
+
             <Text style={styles.userNick}>{perfil?.nick?.toUpperCase() || 'SIN GAMERTAG'}</Text>
             <Text style={styles.userStatus}>JUGADOR ONLINE</Text>
           </View>
 
-          {/* CONTENEDORES DE INFORMACIÓN REAL */}
           <View style={styles.infoContainer}>
-
             <View style={styles.dataBox}>
               <Text style={styles.label}>NOMBRE REAL</Text>
               <Text style={styles.value}>{perfil?.usuario || 'No registrado'}</Text>
@@ -109,29 +197,31 @@ export default function PerfilUsuarioScreen({ navigation }: any) {
               <Text style={[styles.label, { color: '#ff79c6' }]}>CORREO ELECTRÓNICO</Text>
               <Text style={styles.value}>{perfil?.email || 'Desconocido'}</Text>
             </View>
-
           </View>
 
-          {/* BOTÓN SALIR */}
-          <TouchableOpacity
-            style={styles.logoutButton}
-            onPress={() => cerrarSesion()}
-          >
+          <TouchableOpacity style={styles.logoutButton} onPress={() => cerrarSesion()}>
             <Text style={styles.logoutText}>Cerrar Sesion</Text>
           </TouchableOpacity>
 
         </ScrollView>
       </View>
+
+      <Card
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        onCamera={takePhoto}
+        onGallery={pickImage}
+      />
     </ImageBackground>
   )
 }
 
+// Estilos se mantienen igual...
 const styles = StyleSheet.create({
   container: { flex: 1 },
   overlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.88)' },
   scrollContent: { padding: 25, paddingTop: 60, paddingBottom: 50, alignItems: 'center' },
   loadingText: { color: '#00f2ff', marginTop: 15, letterSpacing: 2, fontSize: 12 },
-
   headerContainer: { alignItems: 'center', marginBottom: 40 },
   avatarWrapper: { width: 150, height: 150, justifyContent: 'center', alignItems: 'center' },
   neonRing: {
@@ -147,10 +237,21 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.8
   },
   avatar: { width: 140, height: 140, borderRadius: 70 },
-
+  cameraBadge: {
+    position: 'absolute',
+    bottom: 5,
+    right: 5,
+    backgroundColor: '#00f2ff',
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#000'
+  },
   userNick: { color: '#fff', fontSize: 30, fontWeight: '900', letterSpacing: 2, marginTop: 20, textShadowColor: '#00f2ff', textShadowRadius: 10 },
   userStatus: { color: '#50fa7b', fontSize: 12, fontWeight: 'bold', letterSpacing: 4, marginTop: 5 },
-
   infoContainer: { width: '100%', marginTop: 10 },
   dataBox: {
     backgroundColor: 'rgba(255,255,255,0.04)',
@@ -163,7 +264,6 @@ const styles = StyleSheet.create({
   emailBox: { borderLeftColor: '#ff79c6', backgroundColor: 'rgba(255, 121, 198, 0.05)' },
   label: { color: '#00f2ff', fontSize: 10, fontWeight: 'bold', letterSpacing: 1.5, marginBottom: 4 },
   value: { color: '#fff', fontSize: 16, fontWeight: '500' },
-
   logoutButton: {
     marginTop: 30,
     width: '100%',
