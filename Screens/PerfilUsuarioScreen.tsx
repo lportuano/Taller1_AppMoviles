@@ -26,6 +26,7 @@ export default function PerfilUsuarioScreen({ navigation }: any) {
     traerDatos();
   }, [])
 
+  //logica para traer los datos
   async function traerDatos() {
     try {
       setLoading(true)
@@ -59,32 +60,32 @@ export default function PerfilUsuarioScreen({ navigation }: any) {
     }
   }
 
-  async function subirImagen(uriSeleccionada: string) {
-    const { data: { user } } = await supabase.auth.getUser();
-    const userId = user?.id;
+  //logica para actualizar los datos del perfil
+  async function actualizarPerfil() {
+    try {
+      setLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
 
-    // 1. Transformar a matriz de bits
-    const response = await fetch(uriSeleccionada);
-    const matrizBits = await response.arrayBuffer();
+      const { error } = await supabase
+        .from('registroUsuario')
+        .update({
+          usuario: form.usuario,
+          nick: form.nick,
+          pais: form.pais,
+          genero: form.genero
+        })
+        .eq('id', user?.id);
 
-    const avatarFile = matrizBits;
-    const { data, error } = await supabase
-      .storage
-      .from('jugadores')
-      .upload('usuarios/' + userId + '.png', avatarFile, {
-        contentType: "image/png",
-        upsert: true
-      });
+      if (error) throw error;
 
-    const urlPublica = traerURL(userId);
-
-    await supabase
-      .from('registroUsuario')
-      .update({ avatar: urlPublica })
-      .eq('id', userId);
-
-    setImage(urlPublica + '?t=' + new Date().getTime());
-    console.log(urlPublica);
+      setPerfil(form);
+      setEditando(false);
+      Alert.alert("Sistema", "¡Datos del jugador actualizados!");
+    } catch (error: any) {
+      Alert.alert("Error", error.message);
+    } finally {
+      setLoading(false);
+    }
   }
 
   //logica para subir la imagen
@@ -94,11 +95,10 @@ export default function PerfilUsuarioScreen({ navigation }: any) {
       const { data: { user } } = await supabase.auth.getUser();
       const userId = user?.id;
 
-      //Agregamos un número aleatorio al nombre para que NO sea siempre igual
       const idUnico = Date.now();
       const pathImg = `${userId}/avatar_${idUnico}.png`;
 
-      // Preparar bits
+      //Preparar bits
       const response = await fetch(uriSeleccionada);
       const matrizBits = await response.arrayBuffer();
 
@@ -115,7 +115,7 @@ export default function PerfilUsuarioScreen({ navigation }: any) {
       const { data: urlData } = supabase.storage.from('jugadores').getPublicUrl(pathImg);
       const urlPublica = urlData.publicUrl;
 
-      //Actualizamos la tabla con la nueva URL
+      //Actualizar la tabla con la nueva URL
       await supabase.from('registroUsuario').update({ avatar: urlPublica }).eq('id', userId);
 
       setImage(urlPublica);
