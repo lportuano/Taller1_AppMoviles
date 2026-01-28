@@ -19,72 +19,69 @@ export default function PerfilUsuarioScreen({ navigation }: any) {
 
   //logica para traer los datos
   async function traerDatos() {
-  try {
-    setLoading(true)
-    const { data: { user } } = await supabase.auth.getUser()
+    try {
+      setLoading(true)
+      const { data: { user } } = await supabase.auth.getUser()
 
-    if (user) {
-      const { data, error } = await supabase
-        .from('registroUsuario')
-        .select('usuario, nick, email, pais, genero, avatar')
-        .eq('id', user.id)
-        .maybeSingle()
+      if (user) {
+        const { data, error } = await supabase
+          .from('registroUsuario')
+          .select('usuario, nick, email, pais, genero, avatar')
+          .eq('id', user.id)
+          .maybeSingle()
 
-      if (data) {
-        setPerfil(data)
-        
-        if (data.avatar) {
-          console.log("Imagen cargada de la DB:", data.avatar);
-          setImage(data.avatar); 
+        if (data) {
+          setPerfil(data)
+
+          if (data.avatar) {
+            console.log("Imagen cargada de la DB:", data.avatar);
+            setImage(data.avatar);
+          }
         }
       }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false)
     }
-  } catch (error) {
-    console.error(error);
-  } finally {
-    setLoading(false)
   }
-}
 
   // logica de subir imagen
   async function subirImagen(uriSeleccionada: string) {
     const { data: { user } } = await supabase.auth.getUser();
     const userId = user?.id;
 
+    // 1. Transformar a matriz de bits
+    const response = await fetch(uriSeleccionada);
+    const matrizBits = await response.arrayBuffer();
+
+    const avatarFile = matrizBits;
     const { data, error } = await supabase
       .storage
       .from('jugadores')
-      .upload('usuarios/' + userId + '.png', {
-        uri: uriSeleccionada,
-        name: "avatar.png",
-        type: "image/png"
-      } as any,
-        {
-          contentType: "image/png",
-          upsert: true
-        }
-      )
+      .upload('usuarios/' + userId + '.png', avatarFile, {
+        contentType: "image/png",
+        upsert: true
+      });
 
-    if (error) {
-      console.log("Error Storage:", error.message);
-      return;
-    }
+    const urlPublica = traerURL(userId);
 
-    const { data: { publicUrl } } = supabase.storage
-      .from('jugadores')
-      .getPublicUrl('usuarios/' + userId + '.png');
-
-    const { error: errorUpdate } = await supabase
+    await supabase
       .from('registroUsuario')
-      .update({ avatar: publicUrl })
+      .update({ avatar: urlPublica })
       .eq('id', userId);
 
-    if (errorUpdate) {
-      console.log("Error Tabla:", errorUpdate.message);
-      Alert.alert("Error", "No se pudo guardar la URL en la tabla");
-    } else {
-      setImage(publicUrl + '?t=' + new Date().getTime());
-    }
+    setImage(urlPublica + '?t=' + new Date().getTime());
+    console.log(urlPublica);
+  }
+
+  // Función traerURL
+  function traerURL(userId: any) {
+    const { data } = supabase
+      .storage
+      .from('jugadores')
+      .getPublicUrl('usuarios/' + userId + '.png');
+    return data.publicUrl;
   }
 
   //logica para abrir la galeria
