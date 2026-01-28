@@ -1,23 +1,50 @@
-import React from 'react';
-import { StyleSheet, Text, View, FlatList, ImageBackground } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { StyleSheet, Text, View, FlatList, ImageBackground, ActivityIndicator } from 'react-native';
 
-// Datos de ejemplo (Normalmente esto vendría de una Base de Datos o AsyncStorage)
-const DATA = [
-    { id: '1', nombre: 'KillerPro', puntos: 150 },
-    { id: '2', nombre: 'CyberPlayer', puntos: 124 },
-    { id: '3', nombre: 'RexGamer', puntos: 98 },
-    { id: '4', nombre: 'TuUsuario', puntos: 85 },
-    { id: '5', nombre: 'NoobMaster69', puntos: 40 },
-];
+import { supabase } from '../supabase/config';
 
 export default function PuntuacionScreen() {
 
-    // Diseño de cada fila de la lista
+    const [puntuaciones, setPuntuaciones] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        traerPuntuaciones();
+    }, []);
+
+    async function traerPuntuaciones() {
+        try {
+            setLoading(true);
+            
+            const { data, error } = await supabase
+                .from('puntuacionUsuario')
+                .select(`
+                puntuacion,
+                uid,
+                registroUsuario!inner ( nick )
+            `)
+                .order('puntuacion', { ascending: false });
+
+            if (error) throw error;
+
+            if (data) {
+                setPuntuaciones(data);
+            }
+        } catch (error) {
+            console.error("Error al obtener ranking:", error.message);
+        } finally {
+            setLoading(false);
+        }
+    }
+
+
     const renderItem = ({ item, index }: any) => (
         <View style={styles.itemContainer}>
             <Text style={styles.rankText}>#{index + 1}</Text>
-            <Text style={styles.nameText}>{item.nombre}</Text>
-            <Text style={styles.pointsText}>{item.puntos} PTS</Text>
+            <Text style={styles.nameText}>
+                {item.registroUsuario?.nick}
+            </Text>
+            <Text style={styles.pointsText}>{item.puntuacion} PTS</Text>
         </View>
     );
 
@@ -35,24 +62,29 @@ export default function PuntuacionScreen() {
                     <Text style={styles.headerLabel}>SCORE</Text>
                 </View>
 
-                <FlatList
-                    data={DATA}
-                    renderItem={renderItem}
-                    keyExtractor={item => item.id}
-                    style={styles.list}
-                />
+                {loading ? (
+                    <ActivityIndicator size="large" color="#00f2ff" style={{ marginTop: 50 }} />
+                ) : (
+                    <FlatList
+                        data={puntuaciones}
+                        renderItem={renderItem}
+                        keyExtractor={(item, index) => index.toString()}
+                        style={styles.list}
+                        showsVerticalScrollIndicator={false}
+                        onRefresh={traerPuntuaciones}
+                        refreshing={loading}
+                    />
+                )}
             </View>
         </ImageBackground>
     );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
+    container: { flex: 1 },
     overlay: {
         flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.8)', // Un poco más oscuro para leer bien la lista
+        backgroundColor: 'rgba(0,0,0,0.85)',
         paddingTop: 60,
         paddingHorizontal: 20,
     },
@@ -80,9 +112,7 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontWeight: 'bold',
     },
-    list: {
-        width: '100%',
-    },
+    list: { width: '100%' },
     itemContainer: {
         flexDirection: 'row',
         backgroundColor: 'rgba(255, 255, 255, 0.05)',
@@ -92,7 +122,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         borderLeftWidth: 4,
-        borderLeftColor: '#6200ee', // Color violeta neón
+        borderLeftColor: '#00f2ff',
     },
     rankText: {
         color: '#00f2ff',
@@ -103,10 +133,11 @@ const styles = StyleSheet.create({
     nameText: {
         color: '#fff',
         fontSize: 18,
-        flex: 1, // Toma el espacio del medio
+        flex: 1,
+        fontWeight: '600'
     },
     pointsText: {
-        color: '#bb86fc',
+        color: '#50fa7b',
         fontSize: 18,
         fontWeight: 'bold',
     },

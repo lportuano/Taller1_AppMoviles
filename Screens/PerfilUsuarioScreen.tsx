@@ -17,7 +17,6 @@ export default function PerfilUsuarioScreen({ navigation }: any) {
     traerDatos();
   }, [])
 
-  //logica para traer los datos
   async function traerDatos() {
     try {
       setLoading(true)
@@ -46,7 +45,6 @@ export default function PerfilUsuarioScreen({ navigation }: any) {
     }
   }
 
-  // logica de subir imagen
   async function subirImagen(uriSeleccionada: string) {
     const { data: { user } } = await supabase.auth.getUser();
     const userId = user?.id;
