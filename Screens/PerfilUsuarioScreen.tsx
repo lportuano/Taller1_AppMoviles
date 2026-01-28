@@ -26,7 +26,6 @@ export default function PerfilUsuarioScreen({ navigation }: any) {
     traerDatos();
   }, [])
 
-  //logica para traer los datos
   async function traerDatos() {
     try {
       setLoading(true)
@@ -60,32 +59,32 @@ export default function PerfilUsuarioScreen({ navigation }: any) {
     }
   }
 
-  //logica para actualizar los datos del perfil
-  async function actualizarPerfil() {
-    try {
-      setLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
+  async function subirImagen(uriSeleccionada: string) {
+    const { data: { user } } = await supabase.auth.getUser();
+    const userId = user?.id;
 
-      const { error } = await supabase
-        .from('registroUsuario')
-        .update({
-          usuario: form.usuario,
-          nick: form.nick,
-          pais: form.pais,
-          genero: form.genero
-        })
-        .eq('id', user?.id);
+    // 1. Transformar a matriz de bits
+    const response = await fetch(uriSeleccionada);
+    const matrizBits = await response.arrayBuffer();
 
-      if (error) throw error;
+    const avatarFile = matrizBits;
+    const { data, error } = await supabase
+      .storage
+      .from('jugadores')
+      .upload('usuarios/' + userId + '.png', avatarFile, {
+        contentType: "image/png",
+        upsert: true
+      });
 
-      setPerfil(form);
-      setEditando(false);
-      Alert.alert("Sistema", "¡Datos del jugador actualizados!");
-    } catch (error: any) {
-      Alert.alert("Error", error.message);
-    } finally {
-      setLoading(false);
-    }
+    const urlPublica = traerURL(userId);
+
+    await supabase
+      .from('registroUsuario')
+      .update({ avatar: urlPublica })
+      .eq('id', userId);
+
+    setImage(urlPublica + '?t=' + new Date().getTime());
+    console.log(urlPublica);
   }
 
   //logica para subir la imagen

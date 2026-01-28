@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, Alert, ImageBackground, Dimensions, Image } from 'react-native';
 
-// Obtenemos las dimensiones de la pantalla para que no se salga de los bordes
+
+import { supabase } from '../supabase/config';
+
 const { width, height } = Dimensions.get('window');
 
 export default function JuegoScreen() {
@@ -9,11 +11,49 @@ export default function JuegoScreen() {
     const [tiempo, setTiempo] = useState(10);
     const [activo, setActivo] = useState(false);
 
-    // Estados para la posición (inicia en el centro aproximado)
+
     const [posicion, setPosicion] = useState({
         top: height / 3,
         left: width / 2 - 75
     });
+
+
+    const guardarPuntuacion = async (puntosFinales: number) => {
+        try {
+
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+
+
+            const { data, error: fetchError } = await supabase
+                .from('puntuacionUsuario')
+                .select('puntuacion')
+                .eq('uid', user.id)
+                .maybeSingle();
+
+            const recordAnterior = data ? parseInt(data.puntuacion) : 0;
+
+
+            if (puntosFinales > recordAnterior) {
+                const { error: upsertError } = await supabase
+                    .from('puntuacionUsuario')
+                    .upsert({
+                        uid: user.id,
+                        puntuacion: puntosFinales.toString()
+                    }, { onConflict: 'uid' });
+
+                if (upsertError) {
+                    console.log("Error al actualizar récord:", upsertError.message);
+                } else {
+                    console.log("¡Nuevo récord guardado!");
+                }
+            } else {
+                console.log("No superaste tu récord anterior.");
+            }
+        } catch (error) {
+            console.error("Error inesperado en guardarPuntuacion:", error);
+        }
+    };
 
     useEffect(() => {
         let intervalo: any;
@@ -23,15 +63,16 @@ export default function JuegoScreen() {
             }, 1000);
         } else if (tiempo === 0) {
             setActivo(false);
+
+            guardarPuntuacion(puntos);
+
             Alert.alert("¡TIEMPO AGOTADO!", `Lograste recolectar ${puntos} cristales.`);
             reiniciarJuego();
         }
         return () => clearInterval(intervalo);
     }, [activo, tiempo]);
 
-    // Función para generar coordenadas aleatorias
     const moverObjeto = () => {
-        // Restamos el tamaño del objeto (150) y un margen (50) para que no quede pegado al borde
         const nuevaTop = Math.random() * (height - 300) + 100;
         const nuevaLeft = Math.random() * (width - 150);
         setPosicion({ top: nuevaTop, left: nuevaLeft });
@@ -40,7 +81,7 @@ export default function JuegoScreen() {
     const manejarClick = () => {
         if (!activo) setActivo(true);
         setPuntos(puntos + 1);
-        moverObjeto(); // Cada vez que tocas, se mueve
+        moverObjeto();
     };
 
     const reiniciarJuego = () => {
@@ -65,7 +106,6 @@ export default function JuegoScreen() {
                     <Text style={styles.instruction}>Toca el cristal para comenzar</Text>
                 )}
 
-                {/* El cristal ahora tiene posición dinámica */}
                 <TouchableOpacity
                     style={[
                         styles.target,
@@ -74,9 +114,8 @@ export default function JuegoScreen() {
                     ]}
                     onPress={manejarClick}
                 >
-                    {/* REEMPLAZO DEL CÍRCULO POR UNA IMAGEN */}
                     <Image
-                        source={{ uri: 'https://i.postimg.cc/XJwVPSsg/R.png' }} // Puedes cambiar esta URL por un cristal, una moneda o un enemigo
+                        source={{ uri: 'https://i.postimg.cc/XJwVPSsg/R.png' }}
                         style={styles.imageTarget}
                     />
                 </TouchableOpacity>
@@ -90,13 +129,8 @@ export default function JuegoScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
-    overlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.7)',
-    },
+    container: { flex: 1 },
+    overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)' },
     header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -120,31 +154,21 @@ const styles = StyleSheet.create({
         textTransform: 'uppercase',
     },
     target: {
-        position: 'absolute', // Indispensable para que se mueva por coordenadas
-        width: 120, // Lo hice un poco más pequeño para aumentar dificultad
-        height: 120,
-        backgroundColor: 'rgba(98, 0, 238, 0.3)',
-        borderRadius: 60,
-        borderWidth: 3,
-        borderColor: '#bb86fc',
+        position: 'absolute',
+        width: 100,
+        height: 100,
         justifyContent: 'center',
         alignItems: 'center',
-        elevation: 20,
-        shadowColor: '#bb86fc',
-        shadowRadius: 20,
-        shadowOpacity: 0.8,
     },
-    targetActive: {
-        borderColor: '#00f2ff',
-    },
-    crystalCore: {
-        width: 40,
-        height: 40,
-        backgroundColor: '#00f2ff',
-        transform: [{ rotate: '45deg' }],
+    targetActive: { transform: [{ scale: 1.2 }] },
+    imageTarget: {
+        width: '100%',
+        height: '100%',
+        resizeMode: 'contain',
         shadowColor: '#00f2ff',
-        shadowRadius: 15,
-        elevation: 15,
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.9,
+        shadowRadius: 10,
     },
     resetBtn: {
         position: 'absolute',
@@ -157,28 +181,5 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         letterSpacing: 4,
         fontSize: 16,
-    },
-
-    target: {
-        position: 'absolute',
-        width: 100, // Ajusté el tamaño para que la imagen se vea mejor
-        height: 100,
-        justifyContent: 'center',
-        alignItems: 'center',
-        // Quitamos el fondo y bordes si queremos que solo se vea la imagen
-    },
-
-    targetActive: {
-        transform: [{ scale: 1.2 }], // Efecto de pulsación al estar activo
-    },
-    imageTarget: {
-        width: '100%',
-        height: '100%',
-        resizeMode: 'contain', // Asegura que la imagen no se deforme
-        // Sombra de neón para la imagen
-        shadowColor: '#00f2ff',
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.9,
-        shadowRadius: 10,
     },
 });
