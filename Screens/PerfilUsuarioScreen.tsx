@@ -50,20 +50,27 @@ export default function PerfilUsuarioScreen({ navigation }: any) {
   async function subirImagen(uriSeleccionada: string) {
     const { data: { user } } = await supabase.auth.getUser();
     const userId = user?.id;
+    const nombreArchivo = 'usuarios/' + userId + '.png';
 
-    // 1. Transformar a matriz de bits
+    // 1. ELIMINAR la imagen anterior del Storage (Para que no haya rastro)
+    await supabase.storage
+      .from('jugadores')
+      .remove([nombreArchivo]);
+
+    // 2. Transformar la nueva a matriz de bits
     const response = await fetch(uriSeleccionada);
     const matrizBits = await response.arrayBuffer();
 
+    // 3. Subir la NUEVA imagen
     const avatarFile = matrizBits;
-    const { data, error } = await supabase
-      .storage
+    await supabase.storage
       .from('jugadores')
-      .upload('usuarios/' + userId + '.png', avatarFile, {
+      .upload(nombreArchivo, avatarFile, {
         contentType: "image/png",
         upsert: true
       });
 
+    // 4. Traer la URL y actualizar la base de datos
     const urlPublica = traerURL(userId);
 
     await supabase
@@ -71,11 +78,12 @@ export default function PerfilUsuarioScreen({ navigation }: any) {
       .update({ avatar: urlPublica })
       .eq('id', userId);
 
+    // 5. Forzar el refresco en la app
     setImage(urlPublica + '?t=' + new Date().getTime());
-    console.log(urlPublica);
+    console.log("Archivo reemplazado:", urlPublica);
   }
 
-  // Función traerURL
+  // Función traerURL (Igual a la del ing)
   function traerURL(userId: any) {
     const { data } = supabase
       .storage
@@ -101,7 +109,7 @@ export default function PerfilUsuarioScreen({ navigation }: any) {
 
     if (!result.canceled) {
       setModalVisible(false);
-      subirImagen(result.assets[0].uri);
+      await subirImagen(result.assets[0].uri);
     }
   };
 
