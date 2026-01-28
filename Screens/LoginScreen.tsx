@@ -1,6 +1,6 @@
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, ImageBackground, Vibration, Alert } from 'react-native'
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, ImageBackground, Vibration, Alert, ActivityIndicator } from 'react-native'
 import React, { useEffect, useState } from 'react'
-import { NavigationContainer } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons'
 
 //Biometria
 import * as LocalAuthentication from 'expo-local-authentication';
@@ -12,64 +12,85 @@ export default function LoginScreen({ navigation }: any) {
 
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
+    const [loading, setLoading] = useState(false)
 
     useEffect(() => {
-        revisaBiometria()
+        checarSiHayDatos();
     }, [])
 
+    // Función para guardar credenciales de forma segura tras un login manual exitoso
+    async function guardarCredenciales(mail: string, pass: string, token: string) {
+        await SecureStore.setItemAsync("userEmail", mail);
+        await SecureStore.setItemAsync("userPass", pass);
+        await SecureStore.setItemAsync("token", token);
+    }
+
+    async function checarSiHayDatos() {
+        const savedEmail = await SecureStore.getItemAsync("userEmail");
+        if (savedEmail) {
+        }
+    }
 
     async function login() {
+        if (!email || !password) {
+            Alert.alert("Campos incompletos", "Por favor ingresa correo y contraseña");
+            return;
+        }
+
+        setLoading(true);
         const { data, error } = await supabase.auth.signInWithPassword({
             email: email,
             password: password,
         })
 
-        if (data.session != null) {
-            navigation.navigate("Tab")
-
-            //2.- Guardar el acces Token en login
-            loginExitoso(data.session?.access_token)
-
-        } else {
-            Alert.alert("ERROR")
+        if (error) {
+            Alert.alert("ERROR", error.message);
+            setLoading(false);
+            return;
         }
 
+        if (data.session) {
+            await guardarCredenciales(email, password, data.session.access_token);
+            navigation.navigate("Tab");
+        }
+        setLoading(false);
     }
 
-    //Login por biometria
+    //logica de la biometria
     async function biometria() {
+        const compatible = await LocalAuthentication.hasHardwareAsync();
+        if (!compatible) {
+            return Alert.alert("No compatible", "Este dispositivo no soporta biometría.");
+        }
+
         const authResultado = await LocalAuthentication.authenticateAsync({
-            promptMessage: "Inicia con biometria"
-        })
+            promptMessage: "Identifícate, Jugador",
+            fallbackLabel: "Usar contraseña",
+            disableDeviceFallback: false,
+        });
+
         if (authResultado.success) {
-            console.log("Login exitoso");
-            navigation.navigate("Tab")
+            setLoading(true);
+            const savedEmail = await SecureStore.getItemAsync("userEmail");
+            const savedPass = await SecureStore.getItemAsync("userPass");
+
+            if (savedEmail && savedPass) {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: savedEmail,
+                    password: savedPass,
+                });
+
+                if (!error && data.session) {
+                    Vibration.vibrate(50);
+                    navigation.navigate("Tab");
+                } else {
+                    Alert.alert("Error de Sesión", "Los datos guardados ya no son válidos.");
+                }
+            } else {
+                Alert.alert("Aviso", "Primero debes iniciar sesión manualmente una vez.");
+            }
+            setLoading(false);
         }
-    }
-
-    //1.- verificar si la sesion esta activa
-    async function loginExitoso(accesToken: any) {
-        await SecureStore.setItemAsync("token", accesToken)
-        navigation.navigate("Tab")
-    }
-
-    //3.- verificar si el token es valido
-    async function revisaBiometria() {
-        const token = await SecureStore.getItemAsync("token")
-
-        if (!token) {
-            return false
-        }
-
-        biometria()
-
-    }
-
-    //recuperar usuario
-    async function recuperarUsuario() {
-        const { error } = await supabase.auth.resetPasswordForEmail(email);
-
-        Alert.alert("Solicitud enviada", error?.message || "Revisa tu correo");
     }
 
     return (
@@ -86,6 +107,7 @@ export default function LoginScreen({ navigation }: any) {
                         placeholder="ejemplo@gaming.com"
                         placeholderTextColor="rgba(255, 255, 255, 0.5)"
                         style={styles.input}
+                        value={email}
                         onChangeText={(text) => setEmail(text)}
                         keyboardType="email-address"
                         autoCapitalize="none"
@@ -97,16 +119,26 @@ export default function LoginScreen({ navigation }: any) {
                         placeholderTextColor="rgba(255, 255, 255, 0.5)"
                         style={styles.input}
                         secureTextEntry={true}
+                        value={password}
                         onChangeText={(text) => setPassword(text)}
                     />
                 </View>
 
-                <TouchableOpacity
-                    style={styles.btnLogin}
-                    onPress={() => login()}
-                >
-                    <Text style={styles.textBtn}>START MISSION</Text>
-                </TouchableOpacity>
+                {loading ? (
+                    <ActivityIndicator size="large" color="#00f2ff" />
+                ) : (
+                    <>
+                        <TouchableOpacity style={styles.btnLogin} onPress={login}>
+                            <Text style={styles.textBtn}>START MISSION</Text>
+                        </TouchableOpacity>
+
+                        {/* BOTÓN DE HUELLA DIGITAL */}
+                        <TouchableOpacity style={styles.btnBiometric} onPress={biometria}>
+                            <Ionicons name="finger-print" size={40} color="#00f2ff" />
+                            <Text style={styles.textBiometric}>INGRESAR CON HUELLA</Text>
+                        </TouchableOpacity>
+                    </>
+                )}
 
                 <TouchableOpacity onPress={() => navigation.navigate('Registro')}>
                     <Text style={styles.linkText}>¿No tienes cuenta? <Text style={styles.linkHighlight}>Regístrate aquí</Text></Text>
@@ -117,81 +149,16 @@ export default function LoginScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
-    overlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.6)',
-        justifyContent: "center",
-        alignItems: "center",
-        padding: 20,
-    },
-    title: {
-        color: "#00f2ff",
-        fontSize: 30,
-        marginBottom: 50,
-        fontWeight: "900",
-        letterSpacing: 3,
-        textShadowColor: 'rgba(0, 242, 255, 0.8)',
-        textShadowOffset: { width: 0, height: 0 },
-        textShadowRadius: 15,
-    },
-    inputContainer: {
-        width: '100%',
-        marginBottom: 20,
-        alignItems: 'center',
-    },
-    fieldLabel: {
-        color: '#ff79c6',
-        alignSelf: 'flex-start',
-        marginLeft: '8%',
-        marginBottom: 5,
-        fontSize: 12,
-        fontWeight: 'bold',
-        letterSpacing: 1.5
-    },
-    input: {
-        backgroundColor: 'rgba(255, 255, 255, 0.1)',
-        width: '85%',
-        height: 55,
-        borderRadius: 12,
-        paddingHorizontal: 20,
-        fontSize: 16,
-        color: 'white',
-        marginBottom: 20,
-        borderWidth: 1,
-        borderColor: 'rgba(0, 242, 255, 0.3)',
-    },
-    btnLogin: {
-        backgroundColor: "#6200ee",
-        height: 65,
-        width: "85%",
-        borderRadius: 12,
-        alignItems: "center",
-        justifyContent: "center",
-        marginTop: 20,
-        borderWidth: 2,
-        borderColor: '#bb86fc',
-        elevation: 10,
-        shadowColor: '#6200ee',
-        shadowOffset: { width: 0, height: 5 },
-        shadowOpacity: 0.5,
-    },
-    textBtn: {
-        fontSize: 20,
-        fontWeight: "bold",
-        color: "white",
-        letterSpacing: 2
-    },
-    linkText: {
-        color: 'rgba(255, 255, 255, 0.7)',
-        marginTop: 30,
-        fontSize: 15,
-    },
-    linkHighlight: {
-        color: '#00f2ff',
-        fontWeight: 'bold',
-        textDecorationLine: 'underline'
-    }
+    container: { flex: 1 },
+    overlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.6)', justifyContent: "center", alignItems: "center", padding: 20 },
+    title: { color: "#00f2ff", fontSize: 30, marginBottom: 50, fontWeight: "900", letterSpacing: 3, textShadowColor: 'rgba(0, 242, 255, 0.8)', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 15 },
+    inputContainer: { width: '100%', marginBottom: 20, alignItems: 'center' },
+    fieldLabel: { color: '#ff79c6', alignSelf: 'flex-start', marginLeft: '8%', marginBottom: 5, fontSize: 12, fontWeight: 'bold', letterSpacing: 1.5 },
+    input: { backgroundColor: 'rgba(255, 255, 255, 0.1)', width: '85%', height: 55, borderRadius: 12, paddingHorizontal: 20, fontSize: 16, color: 'white', marginBottom: 20, borderWidth: 1, borderColor: 'rgba(0, 242, 255, 0.3)' },
+    btnLogin: { backgroundColor: "#6200ee", height: 65, width: "85%", borderRadius: 12, alignItems: "center", justifyContent: "center", marginTop: 20, borderWidth: 2, borderColor: '#bb86fc', elevation: 10, shadowColor: '#6200ee', shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.5 },
+    textBtn: { fontSize: 20, fontWeight: "bold", color: "white", letterSpacing: 2 },
+    btnBiometric: { marginTop: 30, alignItems: 'center', justifyContent: 'center' },
+    textBiometric: { color: '#00f2ff', fontSize: 12, fontWeight: 'bold', marginTop: 10, letterSpacing: 1 },
+    linkText: { color: 'rgba(255, 255, 255, 0.7)', marginTop: 30, fontSize: 15 },
+    linkHighlight: { color: '#00f2ff', fontWeight: 'bold', textDecorationLine: 'underline' }
 })
