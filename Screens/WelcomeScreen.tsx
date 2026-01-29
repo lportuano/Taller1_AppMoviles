@@ -1,14 +1,12 @@
 import { Image, StyleSheet, Text, TouchableOpacity, View, FlatList, Dimensions } from 'react-native'
 import React, { useEffect, useRef, useState } from 'react'
-import { useAudioPlayer } from 'expo-audio'; 
+import { useAudioPlayer } from 'expo-audio';
 
-// --- PASO 1: IMPORTAR EXPO-FONT ---
 import { useFonts } from 'expo-font';
 
 const { width, height } = Dimensions.get('window');
 
-// Ruta del audio
-const welcomeAudio = require('../assets/audio/god.mp3'); 
+const welcomeAudio = require('../assets/audio/god.mp3');
 
 const carouselImages = [
   { id: '1', uri: 'https://www.xtrafondos.com/thumbs/vertical/webp/1_11201.webp' },
@@ -21,12 +19,11 @@ const carouselImages = [
 export default function WelcomeScreen({ navigation }: any) {
   const [activeIndex, setActiveIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
-  
-  // 1. Cargamos el player
+
+
   const player = useAudioPlayer(welcomeAudio);
 
-  // Carrusel
-  // --- PASO 2: CARGAR LA FUENTE 'MARIO' ---
+
   const [fontsLoaded] = useFonts({
     'MarioFont': require('../assets/fonts/mario.otf'),
   });
@@ -40,25 +37,21 @@ export default function WelcomeScreen({ navigation }: any) {
     return () => clearInterval(interval);
   }, [activeIndex]);
 
-  // 2. CONTROL DEL AUDIO (Solo aquí)
   useEffect(() => {
     if (player) {
       player.play();
-      player.loop = true; // Si quieres que se repita mientras estén aquí
+      player.loop = true;
     }
 
-    // --- FUNCIÓN DE LIMPIEZA ---
-    // Esto se ejecuta automáticamente cuando sales de la pantalla
     return () => {
       if (player) {
-        player.pause(); // Detiene el sonido
-        player.seekTo(0); // Lo regresa al inicio
+        player.pause();
+        player.seekTo(0);
       }
     };
   }, [player]);
 
   const handleNavigation = (screen: string) => {
-    // Al navegar, pausamos manualmente antes de irnos por seguridad
     if (player) {
       player.pause();
     }
@@ -85,13 +78,12 @@ export default function WelcomeScreen({ navigation }: any) {
 
       <View style={styles.overlay}>
         <View style={styles.topContent}>
-          {/* APLICADO: Fuente Mario */}
           <Text style={styles.title}>WELCOME</Text>
           <Text style={styles.subtitle}>— READY TO PLAY? —</Text>
         </View>
 
         <View style={styles.buttonContainer}>
-          {/* BOTÓN LOGIN */}
+
           <TouchableOpacity
             onPress={() => handleNavigation("Login")}
             style={[styles.btn, { borderColor: '#a020f0' }]}
@@ -102,7 +94,7 @@ export default function WelcomeScreen({ navigation }: any) {
             </View>
           </TouchableOpacity>
 
-          {/* BOTÓN REGISTRO */}
+
           <TouchableOpacity
             onPress={() => handleNavigation("Registro")}
             style={[styles.btn, { borderColor: '#00f2ff' }]}
@@ -137,7 +129,6 @@ const styles = StyleSheet.create({
     letterSpacing: 6,
     textShadowColor: '#00f2ff',
     textShadowRadius: 15,
-    // --- PASO 3: ASIGNAR EL NOMBRE DE LA FUENTE ---
     fontFamily: 'MarioFont',
   },
   subtitle: {
@@ -145,7 +136,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     letterSpacing: 4,
     marginTop: 5,
-    // --- TAMBIÉN AQUÍ ---
     fontFamily: 'MarioFont',
   },
   buttonContainer: { width: '100%', alignItems: 'center', gap: 20 },

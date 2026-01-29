@@ -109,8 +109,6 @@ export default function LoginScreen({ navigation }: any) {
         }
     }
 
-    // Si la fuente no ha cargado, no mostramos nada para evitar el flash de fuente de sistema
-    if (!fontsLoaded) return null;
 
     return (
         <ImageBackground

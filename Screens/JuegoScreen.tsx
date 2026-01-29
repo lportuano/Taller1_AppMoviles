@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, Alert, ImageBackground, Dimensions, Image, Vibration, Animated } from 'react-native';
 import { useFonts } from 'expo-font';
-import { Audio } from 'expo-av';
+import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { supabase } from '../supabase/config';
 
 const { width, height } = Dimensions.get('window');
@@ -26,32 +26,18 @@ export default function JuegoScreen() {
     const [hormigas, setHormigas] = useState<Hormiga[]>([]);
     const [manchas, setManchas] = useState<Mancha[]>([]);
     const nextId = useRef(0);
-    const soundRef = useRef<Audio.Sound | null>(null);
+
+    const player = useAudioPlayer(require('../assets/sounds/splat.mp3'));
 
     const [fontsLoaded] = useFonts({
         'GowFont': require('../assets/fonts/gow.ttf'),
     });
 
-
-    useEffect(() => {
-        async function loadSound() {
-            const { sound } = await Audio.Sound.createAsync(
-
-                require('../assets/sounds/splat.mp3')
-            );
-            soundRef.current = sound;
+    const reproducirSonido = () => {
+        if (player.playing) {
+            player.seekTo(0);
         }
-        loadSound();
-
-        return () => {
-            if (soundRef.current) soundRef.current.unloadAsync();
-        };
-    }, []);
-
-    const reproducirSonido = async () => {
-        if (soundRef.current) {
-            await soundRef.current.replayAsync();
-        }
+        player.play();
     };
 
     const guardarPuntuacion = async (puntosFinales: number) => {
@@ -69,7 +55,6 @@ export default function JuegoScreen() {
         } catch (error) { console.error(error); }
     };
 
-    // --- CRONÓMETRO ---
     useEffect(() => {
         let intervalo: any;
         if (activo && tiempo > 0) {
@@ -86,7 +71,6 @@ export default function JuegoScreen() {
         return () => clearInterval(intervalo);
     }, [activo, tiempo]);
 
-    // Generador de hormigas
     useEffect(() => {
         let generador: any;
         if (activo) {
@@ -126,18 +110,12 @@ export default function JuegoScreen() {
     const aplastarHormiga = (id: number, x: number, yAnim: any) => {
         reproducirSonido();
         Vibration.vibrate(50);
-
-        // Obtener la posición Y actual de la animación para poner la mancha
         const yActual = yAnim._value;
-
         const nuevaMancha = { id: Date.now(), x, y: yActual };
         setManchas(prev => [...prev, nuevaMancha]);
-
-        // La mancha desaparece después de 2 segundos para no saturar la pantalla
         setTimeout(() => {
             setManchas(prev => prev.filter(m => m.id !== nuevaMancha.id));
         }, 2000);
-
         setPuntos(p => p + 1);
         eliminarHormiga(id);
     };
@@ -179,11 +157,10 @@ export default function JuegoScreen() {
                     </View>
                 </View>
 
-
                 {manchas.map((mancha) => (
                     <Image
                         key={mancha.id}
-                        source={{ uri: 'https://i.postimg.cc/bw60hBBx/splat.png' }} // Necesitas un link de una mancha PNG
+                        source={{ uri: 'https://i.postimg.cc/bw60hBBx/splat.png' }}
                         style={[styles.sangre, { left: mancha.x, top: mancha.y }]}
                     />
                 ))}
@@ -260,13 +237,13 @@ const styles = StyleSheet.create({
         borderWidth: 2,
         borderColor: '#8b0000',
         zIndex: 20,
-        borderRadius:20
+        borderRadius: 20
     },
-    instruction: { fontFamily: 'GowFont', 
-        color: '#fff', 
-        fontSize: 28, 
-        letterSpacing: 2 ,
-        
+    instruction: {
+        fontFamily: 'GowFont',
+        color: '#fff',
+        fontSize: 28,
+        letterSpacing: 2
     },
     subInstruction: { color: '#ffd700', fontSize: 10, fontWeight: 'bold', marginTop: 5 },
     target: {
@@ -296,7 +273,7 @@ const styles = StyleSheet.create({
         borderColor: '#37d4d4',
         backgroundColor: 'rgba(0,0,0,0.8)',
         zIndex: 10,
-        borderRadius:20
+        borderRadius: 20
     },
     resetBtnText: { fontFamily: 'GowFont', color: '#37c2d4', fontSize: 14 },
 });
