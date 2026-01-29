@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import { StyleSheet, Text, View, TouchableOpacity, Alert, ImageBackground, Dimensions, Image, Vibration, Animated } from 'react-native';
 import { useFonts } from 'expo-font';
-import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
+import { useAudioPlayer } from 'expo-audio';
 import { supabase } from '../supabase/config';
 
 const { width, height } = Dimensions.get('window');
@@ -27,34 +28,55 @@ export default function JuegoScreen() {
     const [manchas, setManchas] = useState<Mancha[]>([]);
     const nextId = useRef(0);
 
-    const player = useAudioPlayer(require('../assets/sounds/splat.mp3'));
+    // --- AUDIO ---
+    const splatPlayer = useAudioPlayer(require('../assets/sounds/splat.mp3'));
+    const bgMusicPlayer = useAudioPlayer(require('../assets/audio/juego.mp3'));
 
     const [fontsLoaded] = useFonts({
         'GowFont': require('../assets/fonts/gow.ttf'),
     });
 
-    const reproducirSonido = () => {
-        if (player.playing) {
-            player.seekTo(0);
-        }
-        player.play();
-    };
-
-    const guardarPuntuacion = async (puntosFinales: number) => {
-        try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return;
-            const { data } = await supabase.from('puntuacionUsuario').select('puntuacion').eq('uid', user.id).maybeSingle();
-            const recordAnterior = data ? parseInt(data.puntuacion) : 0;
-            if (puntosFinales > recordAnterior) {
-                await supabase.from('puntuacionUsuario').upsert({
-                    uid: user.id,
-                    puntuacion: puntosFinales.toString()
-                }, { onConflict: 'uid' });
+    // --- LÓGICA DE MÚSICA DE FONDO ---
+    useFocusEffect(
+        useCallback(() => {
+            if (bgMusicPlayer && !activo) {
+                try {
+                    bgMusicPlayer.loop = true;
+                    bgMusicPlayer.play();
+                } catch (e) { console.log("Error bgMusic"); }
             }
-        } catch (error) { console.error(error); }
+            return () => {
+                if (bgMusicPlayer && typeof bgMusicPlayer.pause === 'function') {
+                    try { bgMusicPlayer.pause(); } catch (e) { }
+                }
+            };
+        }, [bgMusicPlayer, activo])
+    );
+
+    useEffect(() => {
+        if (bgMusicPlayer) {
+            try {
+                if (activo) {
+                    bgMusicPlayer.pause();
+                    bgMusicPlayer.seekTo(0);
+                } else {
+                    bgMusicPlayer.play();
+                }
+            } catch (e) { }
+        }
+    }, [activo, bgMusicPlayer]);
+
+    // ARREGLO DEL SONIDO: Reinicio instantáneo para que suene siempre
+    const reproducirSplat = async () => {
+        try {
+            if (splatPlayer) {
+                await splatPlayer.seekTo(0); 
+                splatPlayer.play();
+            }
+        } catch (e) { console.log("Error splat player"); }
     };
 
+    // --- LÓGICA DEL JUEGO ---
     useEffect(() => {
         let intervalo: any;
         if (activo && tiempo > 0) {
@@ -97,9 +119,7 @@ export default function JuegoScreen() {
             duration: speed,
             useNativeDriver: false,
         }).start(({ finished }) => {
-            if (finished) {
-                eliminarHormiga(id);
-            }
+            if (finished) eliminarHormiga(id);
         });
     };
 
@@ -108,16 +128,34 @@ export default function JuegoScreen() {
     };
 
     const aplastarHormiga = (id: number, x: number, yAnim: any) => {
-        reproducirSonido();
+        reproducirSplat();
         Vibration.vibrate(50);
-        const yActual = yAnim._value;
+        
+        const yActual = (yAnim as any)._value || 0;
         const nuevaMancha = { id: Date.now(), x, y: yActual };
         setManchas(prev => [...prev, nuevaMancha]);
+        
         setTimeout(() => {
             setManchas(prev => prev.filter(m => m.id !== nuevaMancha.id));
         }, 2000);
+
         setPuntos(p => p + 1);
         eliminarHormiga(id);
+    };
+
+    const guardarPuntuacion = async (puntosFinales: number) => {
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+            const { data } = await supabase.from('puntuacionUsuario').select('puntuacion').eq('uid', user.id).maybeSingle();
+            const recordAnterior = data ? parseInt(data.puntuacion) : 0;
+            if (puntosFinales > recordAnterior) {
+                await supabase.from('puntuacionUsuario').upsert({
+                    uid: user.id,
+                    puntuacion: puntosFinales.toString()
+                }, { onConflict: 'uid' });
+            }
+        } catch (error) { console.error(error); }
     };
 
     const finalizarJuego = () => {
@@ -139,17 +177,12 @@ export default function JuegoScreen() {
     if (!fontsLoaded) return null;
 
     return (
-        <ImageBackground
-            source={{ uri: 'https://i.postimg.cc/TPRMWpd0/fondo.webp' }}
-            style={styles.container}
-        >
+        <ImageBackground source={{ uri: 'https://i.postimg.cc/TPRMWpd0/fondo.webp' }} style={styles.container}>
             <View style={styles.overlay}>
                 <View style={styles.header}>
                     <View style={styles.statCard}>
                         <Text style={styles.label}>CRONOS</Text>
-                        <Text style={[styles.statsText, tiempo <= 3 && styles.tiempoCritico]}>
-                            {tiempo}s
-                        </Text>
+                        <Text style={[styles.statsText, tiempo <= 3 && styles.tiempoCritico]}>{tiempo}s</Text>
                     </View>
                     <View style={styles.statCard}>
                         <Text style={styles.label}>ALMAS</Text>
@@ -158,11 +191,7 @@ export default function JuegoScreen() {
                 </View>
 
                 {manchas.map((mancha) => (
-                    <Image
-                        key={mancha.id}
-                        source={{ uri: 'https://i.postimg.cc/bw60hBBx/splat.png' }}
-                        style={[styles.sangre, { left: mancha.x, top: mancha.y }]}
-                    />
+                    <Image key={mancha.id} source={{ uri: 'https://i.postimg.cc/bw60hBBx/splat.png' }} style={[styles.sangre, { left: mancha.x, top: mancha.y }]} />
                 ))}
 
                 {!activo && (
@@ -173,26 +202,9 @@ export default function JuegoScreen() {
                 )}
 
                 {hormigas.map((hormiga) => (
-                    <Animated.View
-                        key={hormiga.id}
-                        style={[
-                            styles.target,
-                            {
-                                left: hormiga.x,
-                                top: hormiga.y,
-                                transform: [{ rotate: '180deg' }]
-                            }
-                        ]}
-                    >
-                        <TouchableOpacity
-                            activeOpacity={1}
-                            onPress={() => aplastarHormiga(hormiga.id, hormiga.x, hormiga.y)}
-                            style={styles.targetWrapper}
-                        >
-                            <Image
-                                source={{ uri: 'https://i.postimg.cc/XJwVPSsg/R.png' }}
-                                style={styles.imageTarget}
-                            />
+                    <Animated.View key={hormiga.id} style={[styles.target, { left: hormiga.x, top: hormiga.y, transform: [{ rotate: '180deg' }] }]}>
+                        <TouchableOpacity activeOpacity={1} onPress={() => aplastarHormiga(hormiga.id, hormiga.x, hormiga.y)} style={styles.targetWrapper}>
+                            <Image source={{ uri: 'https://i.postimg.cc/XJwVPSsg/R.png' }} style={styles.imageTarget} />
                         </TouchableOpacity>
                     </Animated.View>
                 ))}
@@ -208,72 +220,18 @@ export default function JuegoScreen() {
 const styles = StyleSheet.create({
     container: { flex: 1 },
     overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' },
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        width: '100%',
-        paddingHorizontal: 20,
-        paddingTop: 60,
-        zIndex: 10,
-    },
-    statCard: {
-        backgroundColor: 'rgba(0,0,0,0.7)',
-        padding: 10,
-        borderWidth: 2,
-        borderColor: '#37c9d4',
-        borderRadius: 20,
-        minWidth: 120,
-        alignItems: 'center',
-    },
+    header: { flexDirection: 'row', justifyContent: 'space-between', width: '100%', paddingHorizontal: 20, paddingTop: 60, zIndex: 10 },
+    statCard: { backgroundColor: 'rgba(0,0,0,0.7)', padding: 10, borderWidth: 2, borderColor: '#37c9d4', borderRadius: 20, minWidth: 120, alignItems: 'center' },
     label: { fontFamily: 'GowFont', color: '#ffffff', fontSize: 10, marginBottom: 2 },
     statsText: { fontFamily: 'GowFont', color: '#fff', fontSize: 20 },
     tiempoCritico: { color: '#ff0000', fontSize: 24 },
-    instructionBox: {
-        alignItems: 'center',
-        alignSelf: 'center',
-        marginTop: 100,
-        backgroundColor: 'rgba(139, 0, 0, 0.6)',
-        padding: 20,
-        borderWidth: 2,
-        borderColor: '#8b0000',
-        zIndex: 20,
-        borderRadius: 20
-    },
-    instruction: {
-        fontFamily: 'GowFont',
-        color: '#fff',
-        fontSize: 28,
-        letterSpacing: 2
-    },
+    instructionBox: { alignItems: 'center', alignSelf: 'center', marginTop: 100, backgroundColor: 'rgba(139, 0, 0, 0.6)', padding: 20, borderWidth: 2, borderColor: '#8b0000', zIndex: 20, borderRadius: 20 },
+    instruction: { fontFamily: 'GowFont', color: '#fff', fontSize: 28, letterSpacing: 2 },
     subInstruction: { color: '#ffd700', fontSize: 10, fontWeight: 'bold', marginTop: 5 },
-    target: {
-        position: 'absolute',
-        width: 70,
-        height: 70,
-    },
-    sangre: {
-        position: 'absolute',
-        width: 80,
-        height: 80,
-        opacity: 0.8,
-        resizeMode: 'contain',
-    },
-    targetWrapper: {
-        width: '100%',
-        height: '100%',
-    },
+    target: { position: 'absolute', width: 70, height: 70 },
+    sangre: { position: 'absolute', width: 80, height: 80, opacity: 0.8, resizeMode: 'contain' },
+    targetWrapper: { width: '100%', height: '100%' },
     imageTarget: { width: '100%', height: '100%', resizeMode: 'contain' },
-    resetBtn: {
-        position: 'absolute',
-        bottom: 50,
-        alignSelf: 'center',
-        paddingVertical: 10,
-        paddingHorizontal: 40,
-        borderWidth: 2,
-        borderColor: '#37d4d4',
-        backgroundColor: 'rgba(0,0,0,0.8)',
-        zIndex: 10,
-        borderRadius: 20
-    },
+    resetBtn: { position: 'absolute', bottom: 50, alignSelf: 'center', paddingVertical: 10, paddingHorizontal: 40, borderWidth: 2, borderColor: '#37d4d4', backgroundColor: 'rgba(0,0,0,0.8)', zIndex: 10, borderRadius: 20 },
     resetBtnText: { fontFamily: 'GowFont', color: '#37c2d4', fontSize: 14 },
 });
