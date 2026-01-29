@@ -1,7 +1,8 @@
+import React from 'react'; // Importante para usar useFonts
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createStackNavigator } from "@react-navigation/stack";
-
 import { NavigationContainer } from "@react-navigation/native";
+import { useFonts } from 'expo-font'; // Importamos la utilidad para fuentes
 
 import WelcomeScreen from "../Screens/WelcomeScreen";
 import JuegoScreen from "../Screens/JuegoScreen";
@@ -11,11 +12,9 @@ import RegistroScreen from "../Screens/RegistroScreen";
 import PerfilUsuarioScreen from "../Screens/PerfilUsuarioScreen";
 
 //Iconos
-
 import Entypo from '@expo/vector-icons/Entypo';
 import Feather from '@expo/vector-icons/Feather';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { Color } from "react-native/types_generated/Libraries/Animated/AnimatedExports";
 
 const Tab = createBottomTabNavigator()
 const Stack = createStackNavigator()
@@ -36,17 +35,17 @@ function MyTab() {
         <Tab.Navigator
             screenOptions={{
                 tabBarStyle: {
-                    backgroundColor: '#1e1e2e', // Color de fondo oscuro (Gaming)
+                    backgroundColor: '#1e1e2e',
                     borderTopWidth: 2,
-                    borderTopColor: '#00f2ff', // Línea superior Neón
+                    borderTopColor: '#00f2ff',
                     height: 60,
                     paddingBottom: 5,
                 },
-                tabBarActiveTintColor: '#00f2ff',   // Color del icono seleccionado (Cyan)
-                tabBarInactiveTintColor: '#6272a4', // Color del icono no seleccionado
+                tabBarActiveTintColor: '#00f2ff',
+                tabBarInactiveTintColor: '#6272a4',
                 tabBarLabelStyle: {
-                    fontSize: 12,
-                    fontWeight: 'bold',
+                    fontFamily: 'MarioFont', // <--- Aplicamos la fuente aquí
+                    fontSize: 10, // Bajamos un poco el tamaño porque la fuente suele ser ancha
                     textTransform: 'uppercase',
                 },
             }}
@@ -76,6 +75,13 @@ function MyTab() {
 }
 
 export default function MainNavigator() {
+
+    const [fontsLoaded] = useFonts({
+        'MarioFont': require('../assets/fonts/mario.otf'),
+    });
+
+    if (!fontsLoaded) return null; 
+
     return (
         <NavigationContainer>
             <MyStack />

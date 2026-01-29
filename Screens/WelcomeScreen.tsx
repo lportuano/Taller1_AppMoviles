@@ -1,6 +1,9 @@
 import { Image, StyleSheet, Text, TouchableOpacity, View, FlatList, Dimensions } from 'react-native'
 import React, { useEffect, useRef, useState } from 'react'
 
+// --- PASO 1: IMPORTAR EXPO-FONT ---
+import { useFonts } from 'expo-font';
+
 const { width, height } = Dimensions.get('window');
 
 const carouselImages = [
@@ -15,6 +18,11 @@ export default function WelcomeScreen({ navigation }: any) {
   const [activeIndex, setActiveIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
 
+  // --- PASO 2: CARGAR LA FUENTE 'MARIO' ---
+  const [fontsLoaded] = useFonts({
+    'MarioFont': require('../assets/fonts/mario.otf'),
+  });
+
   useEffect(() => {
     const interval = setInterval(() => {
       let nextIndex = (activeIndex + 1) % carouselImages.length;
@@ -23,6 +31,9 @@ export default function WelcomeScreen({ navigation }: any) {
     }, 4000);
     return () => clearInterval(interval);
   }, [activeIndex]);
+
+  // Si la fuente no ha cargado, no renderizamos nada (evita errores visuales)
+  if (!fontsLoaded) return null;
 
   return (
     <View style={styles.container}>
@@ -46,12 +57,13 @@ export default function WelcomeScreen({ navigation }: any) {
 
       <View style={styles.overlay}>
         <View style={styles.topContent}>
+          {/* APLICADO: Fuente Mario */}
           <Text style={styles.title}>WELCOME</Text>
           <Text style={styles.subtitle}>— READY TO PLAY? —</Text>
         </View>
 
         <View style={styles.buttonContainer}>
-          {/* BOTÓN LOGIN (ESTILO CYBER) */}
+          {/* BOTÓN LOGIN */}
           <TouchableOpacity
             onPress={() => navigation.navigate("Login")}
             style={[styles.btn, { borderColor: '#a020f0' }]}
@@ -62,7 +74,7 @@ export default function WelcomeScreen({ navigation }: any) {
             </View>
           </TouchableOpacity>
 
-          {/* BOTÓN REGISTRO (ESTILO CYBER) */}
+          {/* BOTÓN REGISTRO */}
           <TouchableOpacity
             onPress={() => navigation.navigate("Registro")}
             style={[styles.btn, { borderColor: '#00f2ff' }]}
@@ -94,23 +106,25 @@ const styles = StyleSheet.create({
   title: {
     color: "#fff",
     fontSize: 55,
-    fontWeight: "900",
     letterSpacing: 6,
     textShadowColor: '#00f2ff',
-    textShadowRadius: 15
+    textShadowRadius: 15,
+    // --- PASO 3: ASIGNAR EL NOMBRE DE LA FUENTE ---
+    fontFamily: 'MarioFont',
   },
   subtitle: {
     color: "#00f2ff",
     fontSize: 14,
-    fontWeight: "bold",
     letterSpacing: 4,
-    marginTop: 5
+    marginTop: 5,
+    // --- TAMBIÉN AQUÍ ---
+    fontFamily: 'MarioFont',
   },
   buttonContainer: { width: '100%', alignItems: 'center', gap: 20 },
   btn: {
     width: "85%",
     height: 65,
-    borderRadius: 5, // Bordes más cuadrados para estilo militar/cyber
+    borderRadius: 5,
     borderWidth: 2,
     overflow: 'hidden'
   },
@@ -121,7 +135,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 15
   },
-  btnText: { fontSize: 18, fontWeight: "900", color: "white", letterSpacing: 2 },
+  btnText: {
+    fontSize: 18,
+    color: "white",
+    letterSpacing: 2,
+    // --- TAMBIÉN EN BOTONES SI QUIERES EL ESTILO COMPLETO ---
+    fontFamily: 'MarioFont',
+  },
   img: { height: 26, width: 26, tintColor: 'white' },
-  footerText: { color: 'rgba(255,255,255,0.4)', fontSize: 10, letterSpacing: 3, fontWeight: 'bold' }
+  footerText: {
+    color: 'rgba(255,255,255,0.4)',
+    fontSize: 10,
+    letterSpacing: 3,
+    fontFamily: 'MarioFont',
+  }
 })

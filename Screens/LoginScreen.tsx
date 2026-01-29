@@ -2,6 +2,9 @@ import { StyleSheet, Text, View, TextInput, TouchableOpacity, ImageBackground, V
 import React, { useEffect, useState } from 'react'
 import { Ionicons } from '@expo/vector-icons'
 
+// --- PASO 1: IMPORTAR EXPO-FONT ---
+import { useFonts } from 'expo-font';
+
 //Biometria
 import * as LocalAuthentication from 'expo-local-authentication';
 import * as SecureStore from 'expo-secure-store';
@@ -14,11 +17,15 @@ export default function LoginScreen({ navigation }: any) {
     const [password, setPassword] = useState('')
     const [loading, setLoading] = useState(false)
 
+    // --- PASO 2: CARGAR LA FUENTE 'MARIO' ---
+    const [fontsLoaded] = useFonts({
+        'MarioFont': require('../assets/fonts/mario.otf'),
+    });
+
     useEffect(() => {
         checarSiHayDatos();
     }, [])
 
-    // Función para guardar credenciales de forma segura tras un login manual exitoso
     async function guardarCredenciales(mail: string, pass: string, token: string) {
         await SecureStore.setItemAsync("userEmail", mail);
         await SecureStore.setItemAsync("userPass", pass);
@@ -28,6 +35,7 @@ export default function LoginScreen({ navigation }: any) {
     async function checarSiHayDatos() {
         const savedEmail = await SecureStore.getItemAsync("userEmail");
         if (savedEmail) {
+            // Lógica interna opcional
         }
     }
 
@@ -56,7 +64,6 @@ export default function LoginScreen({ navigation }: any) {
         setLoading(false);
     }
 
-    //logica de la biometria
     async function biometria() {
         const compatible = await LocalAuthentication.hasHardwareAsync();
         if (!compatible) {
@@ -92,6 +99,9 @@ export default function LoginScreen({ navigation }: any) {
             setLoading(false);
         }
     }
+
+    // Si la fuente no ha cargado, no mostramos nada para evitar el flash de fuente de sistema
+    if (!fontsLoaded) return null;
 
     return (
         <ImageBackground
@@ -132,7 +142,6 @@ export default function LoginScreen({ navigation }: any) {
                             <Text style={styles.textBtn}>START MISSION</Text>
                         </TouchableOpacity>
 
-                        {/* BOTÓN DE HUELLA DIGITAL */}
                         <TouchableOpacity style={styles.btnBiometric} onPress={biometria}>
                             <Ionicons name="finger-print" size={40} color="#00f2ff" />
                             <Text style={styles.textBiometric}>INGRESAR CON HUELLA</Text>
@@ -141,7 +150,9 @@ export default function LoginScreen({ navigation }: any) {
                 )}
 
                 <TouchableOpacity onPress={() => navigation.navigate('Registro')}>
-                    <Text style={styles.linkText}>¿No tienes cuenta? <Text style={styles.linkHighlight}>Regístrate aquí</Text></Text>
+                    <Text style={styles.linkText}>¿No tienes cuenta?
+                        <Text style={styles.linkHighlight}> Regístrate aquí</Text>
+                    </Text>
                 </TouchableOpacity>
             </View>
         </ImageBackground>
@@ -149,16 +160,105 @@ export default function LoginScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1 },
-    overlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.6)', justifyContent: "center", alignItems: "center", padding: 20 },
-    title: { color: "#00f2ff", fontSize: 30, marginBottom: 50, fontWeight: "900", letterSpacing: 3, textShadowColor: 'rgba(0, 242, 255, 0.8)', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 15 },
-    inputContainer: { width: '100%', marginBottom: 20, alignItems: 'center' },
-    fieldLabel: { color: '#ff79c6', alignSelf: 'flex-start', marginLeft: '8%', marginBottom: 5, fontSize: 12, fontWeight: 'bold', letterSpacing: 1.5 },
-    input: { backgroundColor: 'rgba(255, 255, 255, 0.1)', width: '85%', height: 55, borderRadius: 12, paddingHorizontal: 20, fontSize: 16, color: 'white', marginBottom: 20, borderWidth: 1, borderColor: 'rgba(0, 242, 255, 0.3)' },
-    btnLogin: { backgroundColor: "#6200ee", height: 65, width: "85%", borderRadius: 12, alignItems: "center", justifyContent: "center", marginTop: 20, borderWidth: 2, borderColor: '#bb86fc', elevation: 10, shadowColor: '#6200ee', shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.5 },
-    textBtn: { fontSize: 20, fontWeight: "bold", color: "white", letterSpacing: 2 },
-    btnBiometric: { marginTop: 30, alignItems: 'center', justifyContent: 'center' },
-    textBiometric: { color: '#00f2ff', fontSize: 12, fontWeight: 'bold', marginTop: 10, letterSpacing: 1 },
-    linkText: { color: 'rgba(255, 255, 255, 0.7)', marginTop: 30, fontSize: 15 },
-    linkHighlight: { color: '#00f2ff', fontWeight: 'bold', textDecorationLine: 'underline' }
+    container: {
+        flex: 1
+    },
+
+    overlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+        justifyContent: "center",
+        alignItems: "center",
+        padding: 20
+    },
+
+    title: {
+        fontFamily: 'MarioFont',
+        color: "#00f2ff",
+        fontSize: 26,
+        marginBottom: 50,
+        letterSpacing: 2,
+        textAlign: 'center',
+        textShadowColor: 'rgba(0, 242, 255, 0.8)',
+        textShadowRadius: 15
+    },
+
+    inputContainer: {
+        width: '100%',
+        marginBottom: 20,
+        alignItems: 'center'
+    },
+
+    fieldLabel: {
+        fontFamily: 'MarioFont',
+        color: '#ff79c6',
+        alignSelf: 'flex-start',
+        marginLeft: '8%',
+        marginBottom: 8,
+        fontSize: 10,
+        letterSpacing: 1
+    },
+
+    input: {
+        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+        width: '85%',
+        height: 55,
+        borderRadius: 12,
+        paddingHorizontal: 20,
+        fontSize: 16,
+        color: 'white',
+        marginBottom: 20,
+        borderWidth: 1,
+        borderColor: 'rgba(0, 242, 255, 0.3)'
+    },
+
+    btnLogin: {
+        backgroundColor: "#6200ee",
+        height: 65,
+        width: "85%",
+        borderRadius: 12,
+        alignItems: "center",
+        justifyContent: "center",
+        marginTop: 20,
+        borderWidth: 2,
+        borderColor: '#bb86fc',
+        elevation: 10,
+        shadowColor: '#6200ee',
+        shadowOffset: { width: 0, height: 5 },
+        shadowOpacity: 0.5
+    },
+
+    textBtn: {
+        fontFamily: 'MarioFont',
+        fontSize: 16,
+        color: "white",
+        letterSpacing: 1
+    },
+
+    btnBiometric: {
+        marginTop: 30,
+        alignItems: 'center',
+        justifyContent: 'center'
+    },
+
+    textBiometric: {
+        fontFamily: 'MarioFont',
+        color: '#00f2ff',
+        fontSize: 9,
+        marginTop: 10,
+        letterSpacing: 1
+    },
+
+    linkText: {
+        fontFamily: 'MarioFont',
+        color: 'rgba(255, 255, 255, 0.7)',
+        marginTop: 35,
+        fontSize: 10,
+        textAlign: 'center'
+    },
+
+    linkHighlight: {
+        color: '#00f2ff',
+        textDecorationLine: 'underline'
+    }
 })
