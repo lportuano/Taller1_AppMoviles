@@ -1,52 +1,74 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View, FlatList, ImageBackground, ActivityIndicator } from 'react-native';
-
+import { useFonts } from 'expo-font';
 import { supabase } from '../supabase/config';
 
 export default function PuntuacionScreen() {
-
     const [puntuaciones, setPuntuaciones] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+    const [fontsLoaded] = useFonts({
+        'GowFont': require('../assets/fonts/gow.ttf'),
+    });
 
     useEffect(() => {
-        traerPuntuaciones();
+        obtenerUsuarioYRanking();
     }, []);
 
-    async function traerPuntuaciones() {
+    async function obtenerUsuarioYRanking() {
+        setLoading(true);
         try {
-            setLoading(true);
-            
-            const { data, error } = await supabase
-                .from('puntuacionUsuario')
-                .select(`
-                puntuacion,
-                uid,
-                registroUsuario!inner ( nick )
-            `)
-                .order('puntuacion', { ascending: false });
-
-            if (error) throw error;
-
-            if (data) {
-                setPuntuaciones(data);
-            }
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) setCurrentUserId(user.id);
+            await traerPuntuaciones();
         } catch (error) {
-            console.error("Error al obtener ranking:", error.message);
+            console.error(error);
         } finally {
             setLoading(false);
         }
     }
 
+    async function traerPuntuaciones() {
+        try {
+            const { data, error } = await supabase
+                .from('puntuacionUsuario')
+                .select(`
+                    puntuacion,
+                    uid,
+                    registroUsuario!inner ( nick )
+                `)
+                .order('puntuacion', { ascending: false });
 
-    const renderItem = ({ item, index }: any) => (
-        <View style={styles.itemContainer}>
-            <Text style={styles.rankText}>#{index + 1}</Text>
-            <Text style={styles.nameText}>
-                {item.registroUsuario?.nick}
-            </Text>
-            <Text style={styles.pointsText}>{item.puntuacion} PTS</Text>
-        </View>
-    );
+            if (error) throw error;
+            if (data) setPuntuaciones(data);
+        } catch (error: any) {
+            console.error(error.message);
+        }
+    }
+
+    const renderItem = ({ item, index }: any) => {
+        const esUsuarioActual = item.uid === currentUserId;
+
+        return (
+            <View style={[
+                styles.itemContainer,
+                esUsuarioActual && styles.usuarioActualContainer
+            ]}>
+                <Text style={[styles.rankText, esUsuarioActual && styles.textoResaltado]}>
+                    #{index + 1}
+                </Text>
+                <Text style={[styles.nameText, esUsuarioActual && styles.textoResaltado]}>
+                    {item.registroUsuario?.nick} {esUsuarioActual ? "(TÚ)" : ""}
+                </Text>
+                <Text style={[styles.pointsText, esUsuarioActual && styles.textoResaltado]}>
+                    {item.puntuacion} PTS
+                </Text>
+            </View>
+        );
+    };
+
+    if (!fontsLoaded) return null;
 
     return (
         <ImageBackground
@@ -89,9 +111,9 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
     },
     title: {
+        fontFamily: 'GowFont',
         color: "#00f2ff",
         fontSize: 35,
-        fontWeight: "900",
         textAlign: 'center',
         letterSpacing: 3,
         textShadowColor: 'rgba(0, 242, 255, 0.8)',
@@ -108,9 +130,9 @@ const styles = StyleSheet.create({
         paddingBottom: 5,
     },
     headerLabel: {
+        fontFamily: 'GowFont',
         color: 'rgba(255,255,255,0.6)',
-        fontSize: 12,
-        fontWeight: 'bold',
+        fontSize: 10,
     },
     list: { width: '100%' },
     itemContainer: {
@@ -124,21 +146,32 @@ const styles = StyleSheet.create({
         borderLeftWidth: 4,
         borderLeftColor: '#00f2ff',
     },
+    usuarioActualContainer: {
+        backgroundColor: 'rgba(255, 215, 0, 0.15)',
+        borderLeftColor: '#ffd700',
+        borderWidth: 1,
+        borderColor: 'rgba(255, 215, 0, 0.5)',
+    },
+    textoResaltado: {
+        color: '#ffd700',
+        textShadowColor: 'rgba(255, 215, 0, 0.5)',
+        textShadowRadius: 10,
+    },
     rankText: {
+        fontFamily: 'GowFont',
         color: '#00f2ff',
-        fontWeight: 'bold',
         fontSize: 16,
-        width: 40,
+        width: 50,
     },
     nameText: {
+        fontFamily: 'GowFont',
         color: '#fff',
-        fontSize: 18,
+        fontSize: 16,
         flex: 1,
-        fontWeight: '600'
     },
     pointsText: {
+        fontFamily: 'GowFont',
         color: '#50fa7b',
-        fontSize: 18,
-        fontWeight: 'bold',
+        fontSize: 16,
     },
 });

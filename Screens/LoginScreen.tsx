@@ -2,6 +2,9 @@ import { StyleSheet, Text, View, TextInput, TouchableOpacity, ImageBackground, V
 import React, { useEffect, useState } from 'react'
 import { Ionicons } from '@expo/vector-icons'
 
+// --- PASO 1: IMPORTAR EXPO-FONT ---
+import { useFonts } from 'expo-font';
+
 //Biometria
 import * as LocalAuthentication from 'expo-local-authentication';
 import * as SecureStore from 'expo-secure-store';
@@ -12,6 +15,11 @@ export default function LoginScreen({ navigation }: any) {
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [loading, setLoading] = useState(false)
+
+    // --- PASO 2: CARGAR LA FUENTE 'MARIO' ---
+    const [fontsLoaded] = useFonts({
+        'MarioFont': require('../assets/fonts/mario.otf'),
+    });
 
     useEffect(() => {
         checarSiHayDatos();
@@ -101,6 +109,9 @@ export default function LoginScreen({ navigation }: any) {
         }
     }
 
+    // Si la fuente no ha cargado, no mostramos nada para evitar el flash de fuente de sistema
+    if (!fontsLoaded) return null;
+
     return (
         <ImageBackground
             source={{ uri: "https://www.xtrafondos.com/thumbs/vertical/webp/1_13421.webp" }}
@@ -140,7 +151,6 @@ export default function LoginScreen({ navigation }: any) {
                             <Text style={styles.textBtn}>START MISSION</Text>
                         </TouchableOpacity>
 
-                        {/* BOTÓN DE HUELLA DIGITAL */}
                         <TouchableOpacity style={styles.btnBiometric} onPress={biometria}>
                             <Ionicons name="finger-print" size={40} color="#00f2ff" />
                             <Text style={styles.textBiometric}>INGRESAR CON HUELLA</Text>
@@ -149,7 +159,9 @@ export default function LoginScreen({ navigation }: any) {
                 )}
 
                 <TouchableOpacity onPress={() => navigation.navigate('Registro')}>
-                    <Text style={styles.linkText}>¿No tienes cuenta? <Text style={styles.linkHighlight}>Regístrate aquí</Text></Text>
+                    <Text style={styles.linkText}>¿No tienes cuenta?
+                        <Text style={styles.linkHighlight}> Regístrate aquí</Text>
+                    </Text>
                 </TouchableOpacity>
             </View>
         </ImageBackground>

@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "upgames",
-    "slug": "upgames",
+    "name": "UPGAMES",
+    "slug": "UPGAMES",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/upgames.jpeg",
@@ -28,7 +28,8 @@
     },
     "plugins": [
       "expo-secure-store",
-      "expo-audio"
+      "expo-audio",
+      "expo-font"
     ]
   }
 }

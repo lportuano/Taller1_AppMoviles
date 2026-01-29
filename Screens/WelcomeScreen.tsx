@@ -2,6 +2,9 @@ import { Image, StyleSheet, Text, TouchableOpacity, View, FlatList, Dimensions }
 import React, { useEffect, useRef, useState } from 'react'
 import { useAudioPlayer } from 'expo-audio'; 
 
+// --- PASO 1: IMPORTAR EXPO-FONT ---
+import { useFonts } from 'expo-font';
+
 const { width, height } = Dimensions.get('window');
 
 // Ruta del audio
@@ -23,6 +26,11 @@ export default function WelcomeScreen({ navigation }: any) {
   const player = useAudioPlayer(welcomeAudio);
 
   // Carrusel
+  // --- PASO 2: CARGAR LA FUENTE 'MARIO' ---
+  const [fontsLoaded] = useFonts({
+    'MarioFont': require('../assets/fonts/mario.otf'),
+  });
+
   useEffect(() => {
     const interval = setInterval(() => {
       let nextIndex = (activeIndex + 1) % carouselImages.length;
@@ -77,11 +85,13 @@ export default function WelcomeScreen({ navigation }: any) {
 
       <View style={styles.overlay}>
         <View style={styles.topContent}>
+          {/* APLICADO: Fuente Mario */}
           <Text style={styles.title}>WELCOME</Text>
           <Text style={styles.subtitle}>— READY TO PLAY? —</Text>
         </View>
 
         <View style={styles.buttonContainer}>
+          {/* BOTÓN LOGIN */}
           <TouchableOpacity
             onPress={() => handleNavigation("Login")}
             style={[styles.btn, { borderColor: '#a020f0' }]}
@@ -92,6 +102,7 @@ export default function WelcomeScreen({ navigation }: any) {
             </View>
           </TouchableOpacity>
 
+          {/* BOTÓN REGISTRO */}
           <TouchableOpacity
             onPress={() => handleNavigation("Registro")}
             style={[styles.btn, { borderColor: '#00f2ff' }]}
@@ -123,17 +134,19 @@ const styles = StyleSheet.create({
   title: {
     color: "#fff",
     fontSize: 55,
-    fontWeight: "900",
     letterSpacing: 6,
     textShadowColor: '#00f2ff',
-    textShadowRadius: 15
+    textShadowRadius: 15,
+    // --- PASO 3: ASIGNAR EL NOMBRE DE LA FUENTE ---
+    fontFamily: 'MarioFont',
   },
   subtitle: {
     color: "#00f2ff",
     fontSize: 14,
-    fontWeight: "bold",
     letterSpacing: 4,
-    marginTop: 5
+    marginTop: 5,
+    // --- TAMBIÉN AQUÍ ---
+    fontFamily: 'MarioFont',
   },
   buttonContainer: { width: '100%', alignItems: 'center', gap: 20 },
   btn: {
@@ -150,7 +163,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 15
   },
-  btnText: { fontSize: 18, fontWeight: "900", color: "white", letterSpacing: 2 },
+  btnText: {
+    fontSize: 18,
+    color: "white",
+    letterSpacing: 2,
+    // --- TAMBIÉN EN BOTONES SI QUIERES EL ESTILO COMPLETO ---
+    fontFamily: 'MarioFont',
+  },
   img: { height: 26, width: 26, tintColor: 'white' },
   footerText: { color: 'rgba(255,255,255,0.4)', fontSize: 10, letterSpacing: 3, fontWeight: 'bold' }
 });
