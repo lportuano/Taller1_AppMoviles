@@ -1,7 +1,11 @@
 import { Image, StyleSheet, Text, TouchableOpacity, View, FlatList, Dimensions } from 'react-native'
 import React, { useEffect, useRef, useState } from 'react'
+import { useAudioPlayer } from 'expo-audio'; 
 
 const { width, height } = Dimensions.get('window');
+
+// Ruta del audio
+const welcomeAudio = require('../assets/audio/god.mp3'); 
 
 const carouselImages = [
   { id: '1', uri: 'https://www.xtrafondos.com/thumbs/vertical/webp/1_11201.webp' },
@@ -14,7 +18,11 @@ const carouselImages = [
 export default function WelcomeScreen({ navigation }: any) {
   const [activeIndex, setActiveIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
+  
+  // 1. Cargamos el player
+  const player = useAudioPlayer(welcomeAudio);
 
+  // Carrusel
   useEffect(() => {
     const interval = setInterval(() => {
       let nextIndex = (activeIndex + 1) % carouselImages.length;
@@ -24,9 +32,33 @@ export default function WelcomeScreen({ navigation }: any) {
     return () => clearInterval(interval);
   }, [activeIndex]);
 
+  // 2. CONTROL DEL AUDIO (Solo aquí)
+  useEffect(() => {
+    if (player) {
+      player.play();
+      player.loop = true; // Si quieres que se repita mientras estén aquí
+    }
+
+    // --- FUNCIÓN DE LIMPIEZA ---
+    // Esto se ejecuta automáticamente cuando sales de la pantalla
+    return () => {
+      if (player) {
+        player.pause(); // Detiene el sonido
+        player.seekTo(0); // Lo regresa al inicio
+      }
+    };
+  }, [player]);
+
+  const handleNavigation = (screen: string) => {
+    // Al navegar, pausamos manualmente antes de irnos por seguridad
+    if (player) {
+      player.pause();
+    }
+    navigation.navigate(screen);
+  };
+
   return (
     <View style={styles.container}>
-      {/* FONDO CARRUSEL */}
       <View style={StyleSheet.absoluteFill}>
         <FlatList
           ref={flatListRef}
@@ -40,7 +72,6 @@ export default function WelcomeScreen({ navigation }: any) {
             <Image source={{ uri: item.uri }} style={styles.backgroundStep} blurRadius={3} />
           )}
         />
-        {/* Capa oscura para mejorar contraste */}
         <View style={styles.darkFilter} />
       </View>
 
@@ -51,9 +82,8 @@ export default function WelcomeScreen({ navigation }: any) {
         </View>
 
         <View style={styles.buttonContainer}>
-          {/* BOTÓN LOGIN (ESTILO CYBER) */}
           <TouchableOpacity
-            onPress={() => navigation.navigate("Login")}
+            onPress={() => handleNavigation("Login")}
             style={[styles.btn, { borderColor: '#a020f0' }]}
           >
             <View style={[styles.btnInner, { backgroundColor: 'rgba(160, 32, 240, 0.2)' }]}>
@@ -62,9 +92,8 @@ export default function WelcomeScreen({ navigation }: any) {
             </View>
           </TouchableOpacity>
 
-          {/* BOTÓN REGISTRO (ESTILO CYBER) */}
           <TouchableOpacity
-            onPress={() => navigation.navigate("Registro")}
+            onPress={() => handleNavigation("Registro")}
             style={[styles.btn, { borderColor: '#00f2ff' }]}
           >
             <View style={[styles.btnInner, { backgroundColor: 'rgba(0, 242, 255, 0.1)' }]}>
@@ -110,7 +139,7 @@ const styles = StyleSheet.create({
   btn: {
     width: "85%",
     height: 65,
-    borderRadius: 5, // Bordes más cuadrados para estilo militar/cyber
+    borderRadius: 5,
     borderWidth: 2,
     overflow: 'hidden'
   },
@@ -124,4 +153,4 @@ const styles = StyleSheet.create({
   btnText: { fontSize: 18, fontWeight: "900", color: "white", letterSpacing: 2 },
   img: { height: 26, width: 26, tintColor: 'white' },
   footerText: { color: 'rgba(255,255,255,0.4)', fontSize: 10, letterSpacing: 3, fontWeight: 'bold' }
-})
+});

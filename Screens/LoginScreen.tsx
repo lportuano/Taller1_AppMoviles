@@ -9,7 +9,6 @@ import * as SecureStore from 'expo-secure-store';
 import { supabase } from '../supabase/config';
 
 export default function LoginScreen({ navigation }: any) {
-
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [loading, setLoading] = useState(false)
@@ -18,7 +17,12 @@ export default function LoginScreen({ navigation }: any) {
         checarSiHayDatos();
     }, [])
 
-    // Función para guardar credenciales de forma segura tras un login manual exitoso
+    async function borrarCredenciales() {
+        await SecureStore.deleteItemAsync("userEmail");
+        await SecureStore.deleteItemAsync("userPass");
+        await SecureStore.deleteItemAsync("token");
+    }
+
     async function guardarCredenciales(mail: string, pass: string, token: string) {
         await SecureStore.setItemAsync("userEmail", mail);
         await SecureStore.setItemAsync("userPass", pass);
@@ -28,6 +32,7 @@ export default function LoginScreen({ navigation }: any) {
     async function checarSiHayDatos() {
         const savedEmail = await SecureStore.getItemAsync("userEmail");
         if (savedEmail) {
+            setEmail(savedEmail);
         }
     }
 
@@ -38,13 +43,15 @@ export default function LoginScreen({ navigation }: any) {
         }
 
         setLoading(true);
+        await supabase.auth.signOut(); 
+
         const { data, error } = await supabase.auth.signInWithPassword({
             email: email,
             password: password,
         })
 
         if (error) {
-            Alert.alert("ERROR", error.message);
+            Alert.alert("Error de Acceso", "Error en las credenciales revisalas");
             setLoading(false);
             return;
         }
@@ -56,7 +63,6 @@ export default function LoginScreen({ navigation }: any) {
         setLoading(false);
     }
 
-    //logica de la biometria
     async function biometria() {
         const compatible = await LocalAuthentication.hasHardwareAsync();
         if (!compatible) {
@@ -66,7 +72,6 @@ export default function LoginScreen({ navigation }: any) {
         const authResultado = await LocalAuthentication.authenticateAsync({
             promptMessage: "Identifícate, Jugador",
             fallbackLabel: "Usar contraseña",
-            disableDeviceFallback: false,
         });
 
         if (authResultado.success) {
@@ -75,6 +80,8 @@ export default function LoginScreen({ navigation }: any) {
             const savedPass = await SecureStore.getItemAsync("userPass");
 
             if (savedEmail && savedPass) {
+                await supabase.auth.signOut();
+
                 const { data, error } = await supabase.auth.signInWithPassword({
                     email: savedEmail,
                     password: savedPass,
@@ -84,10 +91,11 @@ export default function LoginScreen({ navigation }: any) {
                     Vibration.vibrate(50);
                     navigation.navigate("Tab");
                 } else {
-                    Alert.alert("Error de Sesión", "Los datos guardados ya no son válidos.");
+                    await borrarCredenciales();
+                    Alert.alert("Sesión Expirada", "Por seguridad, ingresa tu contraseña manualmente una vez más.");
                 }
             } else {
-                Alert.alert("Aviso", "Primero debes iniciar sesión manualmente una vez.");
+                Alert.alert("Aviso", "Primero debes iniciar sesión manualmente.");
             }
             setLoading(false);
         }
@@ -149,16 +157,94 @@ export default function LoginScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1 },
-    overlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.6)', justifyContent: "center", alignItems: "center", padding: 20 },
-    title: { color: "#00f2ff", fontSize: 30, marginBottom: 50, fontWeight: "900", letterSpacing: 3, textShadowColor: 'rgba(0, 242, 255, 0.8)', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 15 },
-    inputContainer: { width: '100%', marginBottom: 20, alignItems: 'center' },
-    fieldLabel: { color: '#ff79c6', alignSelf: 'flex-start', marginLeft: '8%', marginBottom: 5, fontSize: 12, fontWeight: 'bold', letterSpacing: 1.5 },
-    input: { backgroundColor: 'rgba(255, 255, 255, 0.1)', width: '85%', height: 55, borderRadius: 12, paddingHorizontal: 20, fontSize: 16, color: 'white', marginBottom: 20, borderWidth: 1, borderColor: 'rgba(0, 242, 255, 0.3)' },
-    btnLogin: { backgroundColor: "#6200ee", height: 65, width: "85%", borderRadius: 12, alignItems: "center", justifyContent: "center", marginTop: 20, borderWidth: 2, borderColor: '#bb86fc', elevation: 10, shadowColor: '#6200ee', shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.5 },
-    textBtn: { fontSize: 20, fontWeight: "bold", color: "white", letterSpacing: 2 },
-    btnBiometric: { marginTop: 30, alignItems: 'center', justifyContent: 'center' },
-    textBiometric: { color: '#00f2ff', fontSize: 12, fontWeight: 'bold', marginTop: 10, letterSpacing: 1 },
-    linkText: { color: 'rgba(255, 255, 255, 0.7)', marginTop: 30, fontSize: 15 },
-    linkHighlight: { color: '#00f2ff', fontWeight: 'bold', textDecorationLine: 'underline' }
+    container: { 
+        flex: 1 
+    },
+    overlay: { 
+        flex: 1, 
+        backgroundColor: 'rgba(0, 0, 0, 0.6)', 
+        justifyContent: "flex-end",
+        alignItems: "center", 
+        paddingBottom: 50
+    },
+    title: { 
+        color: "#00f2ff", 
+        fontSize: 30, 
+        marginBottom: 40,
+        fontWeight: "900", 
+        letterSpacing: 3, 
+        textShadowColor: 'rgba(0, 242, 255, 0.8)', 
+        textShadowOffset: { width: 0, height: 0 }, 
+        textShadowRadius: 15 
+    },
+    inputContainer: { 
+        width: '100%', 
+        marginBottom: 10, 
+        alignItems: 'center' 
+    },
+    fieldLabel: { 
+        color: '#ff79c6', 
+        alignSelf: 'flex-start', 
+        marginLeft: '10%', 
+        marginBottom: 5, 
+        fontSize: 12, 
+        fontWeight: 'bold', 
+        letterSpacing: 1.5 
+    },
+    input: { 
+        backgroundColor: 'rgba(255, 255, 255, 0.1)', 
+        width: '85%', 
+        height: 55, 
+        borderRadius: 12, 
+        paddingHorizontal: 20, 
+        fontSize: 16, 
+        color: 'white', 
+        marginBottom: 15, 
+        borderWidth: 1, 
+        borderColor: 'rgba(0, 242, 255, 0.3)' 
+    },
+    btnLogin: { 
+        backgroundColor: "#6200ee", 
+        height: 65, 
+        width: "85%", 
+        borderRadius: 12, 
+        alignItems: "center", 
+        justifyContent: "center", 
+        marginTop: 20, 
+        borderWidth: 2, 
+        borderColor: '#bb86fc', 
+        elevation: 10, 
+        shadowColor: '#6200ee', 
+        shadowOffset: { width: 0, height: 5 }, 
+        shadowOpacity: 0.5 
+    },
+    textBtn: { 
+        fontSize: 20, 
+        fontWeight: "bold", 
+        color: "white", 
+        letterSpacing: 2 
+    },
+    btnBiometric: { 
+        marginTop: 70,
+        alignItems: 'center', 
+        justifyContent: 'center' 
+    },
+    textBiometric: { 
+        color: '#00f2ff', 
+        fontSize: 12, 
+        fontWeight: 'bold', 
+        marginTop: 5, 
+        letterSpacing: 1 
+    },
+    linkText: { 
+        color: 'rgba(255, 255, 255, 0.7)', 
+        marginTop: 60,
+        fontSize: 15,
+        marginBottom: 20
+    },
+    linkHighlight: { 
+        color: '#00f2ff', 
+        fontWeight: 'bold', 
+        textDecorationLine: 'underline' 
+    }
 })
